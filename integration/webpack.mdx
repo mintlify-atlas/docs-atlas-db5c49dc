@@ -1,0 +1,506 @@
+---
+title: "Webpack Loader"
+description: "Use Tailwind CSS with webpack via a custom loader"
+---
+
+The `@tailwindcss/webpack` loader provides direct integration with webpack, processing your CSS files and enabling efficient rebuilds with webpack's caching system.
+
+## Installation
+
+<Steps>
+  <Step title="Install the loader">
+    Install the `@tailwindcss/webpack` package:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm install -D @tailwindcss/webpack
+    ```
+
+    ```bash pnpm
+    pnpm add -D @tailwindcss/webpack
+    ```
+
+    ```bash yarn
+    yarn add -D @tailwindcss/webpack
+    ```
+
+    ```bash bun
+    bun add -D @tailwindcss/webpack
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure webpack">
+    Add the loader to your `webpack.config.js`:
+
+    ```javascript webpack.config.js
+    module.exports = {
+      module: {
+        rules: [
+          {
+            test: /\.css$/,
+            use: [
+              'style-loader',
+              'css-loader',
+              {
+                loader: '@tailwindcss/webpack',
+                options: {},
+              },
+            ],
+          },
+        ],
+      },
+    }
+    ```
+  </Step>
+
+  <Step title="Import Tailwind in your CSS">
+    Add the Tailwind CSS import to your main CSS file:
+
+    ```css src/styles.css
+    @import 'tailwindcss';
+    ```
+  </Step>
+
+  <Step title="Import CSS in your app">
+    Import your CSS file in your JavaScript entry point:
+
+    ```javascript src/index.js
+    import './styles.css'
+    ```
+  </Step>
+</Steps>
+
+## Configuration
+
+The webpack loader accepts configuration options:
+
+```javascript webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: '@tailwindcss/webpack',
+            options: {
+              base: './src',
+              optimize: true,
+            },
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+### Options
+
+<ResponseField name="base" type="string">
+  The base directory to scan for class candidates.
+  
+  **Default:** `process.cwd()` (current working directory)
+</ResponseField>
+
+<ResponseField name="optimize" type="boolean | { minify?: boolean }">
+  Enable CSS optimization and minification.
+  
+  - `false` - No optimization
+  - `true` - Full optimization with minification
+  - `{ minify: false }` - Optimize without minifying
+  
+  **Default:** `true` when `NODE_ENV === 'production'`, otherwise `false`
+</ResponseField>
+
+## How It Works
+
+The webpack loader integrates into webpack's module pipeline:
+
+1. **Intercepts CSS files** - Processes files that import Tailwind CSS
+2. **Compiles Tailwind** - Generates CSS for all detected utilities
+3. **Scans content** - Finds Tailwind classes in your source files
+4. **Reports dependencies** - Tells webpack about all relevant files
+5. **Optimizes output** - Optionally minifies using Lightning CSS
+6. **Returns CSS** - Passes the processed CSS to the next loader
+
+### Caching
+
+The loader uses an LRU cache to store:
+
+- **Compiler instances** - Reused across rebuilds
+- **Scanner instances** - Maintained between builds
+- **Candidate sets** - Accumulated over time
+- **File modification times** - For change detection
+
+The cache is keyed by:
+- Input file path
+- Base directory
+- Optimization settings
+
+This ensures different configurations don't interfere with each other.
+
+## Dependency Tracking
+
+The loader automatically reports dependencies to webpack:
+
+```javascript
+// Dependencies include:
+- CSS files (via this.addDependency)
+- Config and plugin files (via this.addDependency)
+- Content files (via this.addDependency)
+- Content directories (via this.addContextDependency)
+```
+
+Webpack will rebuild when any of these files change.
+
+## Content Detection
+
+The loader scans your project for Tailwind classes:
+
+```javascript
+// Default pattern from base directory:
+**/*
+```
+
+Customize content sources using the `@source` directive:
+
+```css
+@import 'tailwindcss';
+@source '../templates/**/*.html';
+@source './components/**/*.jsx';
+```
+
+## Rebuild Strategies
+
+The loader uses intelligent rebuild strategies:
+
+### Incremental Rebuild
+
+When only template files change:
+- Scans changed files for new candidates
+- Rebuilds CSS only if new classes are detected
+- Very fast, leverages webpack's incremental compilation
+
+### Full Rebuild
+
+When CSS, config, or plugin files change:
+- Clears Node.js require cache for affected files
+- Recreates the compiler instance
+- Scans all content files again
+- Rebuilds the complete CSS output
+
+## Optimization
+
+### Development Mode
+
+Disable optimization for faster builds:
+
+```javascript webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: '@tailwindcss/webpack',
+            options: {
+              optimize: false, // Faster rebuilds
+            },
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+### Production Mode
+
+Enable optimization with minification:
+
+```javascript webpack.config.js
+module.exports = {
+  mode: 'production',
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          {
+            loader: '@tailwindcss/webpack',
+            options: {
+              optimize: true, // Full optimization
+            },
+          },
+        ],
+      },
+    ],
+  },
+  plugins: [
+    new MiniCssExtractPlugin(),
+  ],
+}
+```
+
+### Optimize Without Minification
+
+```javascript webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: '@tailwindcss/webpack',
+            options: {
+              optimize: {
+                minify: false, // Optimize but preserve formatting
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+## CSS Modules
+
+The loader automatically detects CSS Module files (`*.module.css`) and disables the `@property` polyfill to avoid build errors:
+
+```css Button.module.css
+@import 'tailwindcss';
+
+.button {
+  @apply px-4 py-2 bg-blue-500 text-white rounded;
+}
+```
+
+Configure webpack to handle CSS Modules:
+
+```javascript webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.module\.css$/,
+        use: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            options: {
+              modules: true,
+            },
+          },
+          '@tailwindcss/webpack',
+        ],
+      },
+    ],
+  },
+}
+```
+
+## Integration Examples
+
+### Basic Setup
+
+```javascript webpack.config.js
+module.exports = {
+  entry: './src/index.js',
+  output: {
+    path: __dirname + '/dist',
+    filename: 'bundle.js',
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          '@tailwindcss/webpack',
+        ],
+      },
+    ],
+  },
+}
+```
+
+### With MiniCssExtractPlugin
+
+```javascript webpack.config.js
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          '@tailwindcss/webpack',
+        ],
+      },
+    ],
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: '[name].[contenthash].css',
+    }),
+  ],
+}
+```
+
+### With React
+
+```javascript webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.jsx?$/,
+        use: 'babel-loader',
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          '@tailwindcss/webpack',
+        ],
+      },
+    ],
+  },
+}
+```
+
+### With TypeScript
+
+```javascript webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          '@tailwindcss/webpack',
+        ],
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+  },
+}
+```
+
+## Development Server
+
+Use webpack-dev-server for live reloading:
+
+```javascript webpack.config.js
+module.exports = {
+  devServer: {
+    static: './dist',
+    hot: true,
+  },
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          '@tailwindcss/webpack',
+        ],
+      },
+    ],
+  },
+}
+```
+
+Start the dev server:
+
+```bash
+webpack serve --mode development
+```
+
+## Error Handling
+
+The loader handles errors gracefully:
+
+- **Compilation errors** are reported to webpack
+- **Cache is cleared** on errors to force a full rebuild
+- **Build continues** with other modules when possible
+
+Errors appear in webpack's output:
+
+```bash
+ERROR in ./src/styles.css
+Module build failed: Error: Invalid Tailwind directive
+```
+
+<Note>
+  The loader uses the same Rust-based scanner as other Tailwind integrations for consistent performance and behavior.
+</Note>
+
+## Troubleshooting
+
+### Slow Builds
+
+For large projects:
+
+1. Use specific content patterns with `@source`
+2. Ensure `node_modules` is excluded from scanning
+3. Disable optimization in development mode
+4. Use webpack's caching options
+
+### Cache Issues
+
+If you're seeing stale CSS:
+
+1. Clear webpack's cache: `rm -rf node_modules/.cache`
+2. Restart webpack-dev-server
+3. Check that file watching is working correctly
+
+### Dependencies Not Tracked
+
+If webpack isn't rebuilding when files change:
+
+1. Verify the `base` option is correct
+2. Check that files are within the base directory
+3. Ensure webpack's watch options are configured
+4. Look for errors in the webpack output
+
+### CSS Not Generated
+
+If Tailwind CSS isn't being processed:
+
+1. Ensure `@import 'tailwindcss'` is in your CSS file
+2. Check that the loader is configured for `.css` files
+3. Verify the loader runs before `css-loader`
+4. Check for errors in the webpack console

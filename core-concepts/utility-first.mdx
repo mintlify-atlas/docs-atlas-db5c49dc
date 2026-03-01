@@ -1,0 +1,243 @@
+---
+title: Utility-First Fundamentals
+description: Learn how Tailwind's utility-first approach helps you build modern websites without leaving your HTML.
+---
+
+Tailwind CSS is built around a utility-first methodology that provides low-level utility classes to build completely custom designs directly in your markup.
+
+## What is Utility-First CSS?
+
+Instead of writing custom CSS for every component, Tailwind provides thousands of utility classes that map directly to CSS properties. Each utility applies a single CSS declaration, giving you granular control over your design.
+
+<CodeGroup>
+```html Traditional CSS
+<div class="chat-notification">
+  <div class="chat-notification-logo-wrapper">
+    <img class="chat-notification-logo" src="/img/logo.svg" alt="Logo">
+  </div>
+  <div class="chat-notification-content">
+    <h4 class="chat-notification-title">ChitChat</h4>
+    <p class="chat-notification-message">You have a new message!</p>
+  </div>
+</div>
+
+<style>
+  .chat-notification {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  }
+  .chat-notification-logo {
+    width: 3rem;
+    height: 3rem;
+  }
+  .chat-notification-content {
+    margin-left: 1rem;
+  }
+  .chat-notification-title {
+    font-weight: 700;
+    color: #111827;
+  }
+  .chat-notification-message {
+    color: #6b7280;
+  }
+</style>
+```
+
+```html Utility-First
+<div class="flex items-center p-4 bg-white rounded-lg shadow-lg">
+  <img class="w-12 h-12" src="/img/logo.svg" alt="Logo">
+  <div class="ml-4">
+    <h4 class="font-bold text-gray-900">ChitChat</h4>
+    <p class="text-gray-600">You have a new message!</p>
+  </div>
+</div>
+```
+</CodeGroup>
+
+## How Utilities Work
+
+Each utility class in Tailwind maps to specific CSS properties and values. Here's how the system works under the hood:
+
+### Static Utilities
+
+Static utilities have fixed values and generate straightforward CSS:
+
+```html
+<div class="flex">
+  <!-- Generates: display: flex; -->
+</div>
+
+<div class="relative">
+  <!-- Generates: position: relative; -->
+</div>
+
+<div class="sr-only">
+  <!-- Generates multiple properties for screen reader accessibility -->
+</div>
+```
+
+From the source code, static utilities like `sr-only` are defined as:
+
+```typescript
+staticUtility('sr-only', [
+  ['position', 'absolute'],
+  ['width', '1px'],
+  ['height', '1px'],
+  ['padding', '0'],
+  ['margin', '-1px'],
+  ['overflow', 'hidden'],
+  ['clip-path', 'inset(50%)'],
+  ['white-space', 'nowrap'],
+  ['border-width', '0'],
+])
+```
+
+### Functional Utilities
+
+Functional utilities accept values from your theme or arbitrary values:
+
+```html
+<div class="p-4">
+  <!-- Generates: padding: 1rem; (from theme spacing) -->
+</div>
+
+<div class="w-64">
+  <!-- Generates: width: 16rem; (from theme spacing) -->
+</div>
+
+<div class="bg-blue-500">
+  <!-- Generates: background-color: var(--color-blue-500); -->
+</div>
+```
+
+### Arbitrary Values
+
+When you need a one-off value, use arbitrary values with square brackets:
+
+```html
+<div class="w-[347px]">
+  <!-- Generates: width: 347px; -->
+</div>
+
+<div class="bg-[#1da1f2]">
+  <!-- Generates: background-color: #1da1f2; -->
+</div>
+
+<div class="top-[117px]">
+  <!-- Generates: top: 117px; -->
+</div>
+```
+
+## Spacing Scale
+
+Tailwind uses a consistent spacing scale for utilities like padding, margin, width, and more:
+
+<Tabs>
+  <Tab title="Numeric Scale">
+    ```html
+    <div class="m-0">   <!-- 0 -->
+    <div class="m-1">   <!-- 0.25rem (4px) -->
+    <div class="m-2">   <!-- 0.5rem (8px) -->
+    <div class="m-4">   <!-- 1rem (16px) -->
+    <div class="m-8">   <!-- 2rem (32px) -->
+    <div class="m-16">  <!-- 4rem (64px) -->
+    <div class="m-32">  <!-- 8rem (128px) -->
+    <div class="m-64">  <!-- 16rem (256px) -->
+    ```
+  </Tab>
+  <Tab title="Fractional Scale">
+    ```html
+    <div class="w-1/2">   <!-- 50% -->
+    <div class="w-1/3">   <!-- 33.333333% -->
+    <div class="w-2/3">   <!-- 66.666667% -->
+    <div class="w-1/4">   <!-- 25% -->
+    <div class="w-3/4">   <!-- 75% -->
+    <div class="w-1/5">   <!-- 20% -->
+    <div class="w-full">  <!-- 100% -->
+    ```
+  </Tab>
+  <Tab title="Bare Values">
+    ```html
+    <!-- Utilities support bare numeric values via the spacing multiplier -->
+    <div class="p-6">     <!-- Uses theme spacing multiplier -->
+    <div class="m-12">    <!-- Uses theme spacing multiplier -->
+    <div class="gap-4">   <!-- Uses theme spacing multiplier -->
+    ```
+  </Tab>
+</Tabs>
+
+## Negative Values
+
+Many utilities support negative values using a `-` prefix:
+
+```html
+<div class="-m-4">
+  <!-- Generates: margin: -1rem; -->
+</div>
+
+<div class="-top-8">
+  <!-- Generates: top: -2rem; -->
+</div>
+
+<div class="-translate-x-full">
+  <!-- Generates: transform with negative translation -->
+</div>
+```
+
+## Why Utility-First?
+
+### 1. You aren't wasting energy inventing class names
+
+No more adding silly class names like `sidebar-inner-wrapper` just to be able to style something, and no more agonizing over the perfect abstract name for something that's really just a flex container.
+
+### 2. Your CSS stops growing
+
+Using a traditional approach, your CSS files get bigger every time you add a new feature. With utilities, everything is reusable so you rarely need to write new CSS.
+
+### 3. Making changes feels safer
+
+CSS is global and you never know what you're breaking when you make a change in a stylesheet. Classes in your HTML are local, so you can change them without worrying about breaking something else.
+
+### 4. Responsive design is built-in
+
+Break out of the constraints of mobile-first and build truly responsive designs:
+
+```html
+<div class="text-center md:text-left lg:text-right">
+  <!-- Center on mobile, left on tablet, right on desktop -->
+</div>
+```
+
+## Maintainability Concerns
+
+<Note>
+  The biggest concern with utility-first CSS is maintainability. Won't I have to update utilities in dozens of places if I want to change a design?
+</Note>
+
+**In practice, this is much less of a problem than you might think:**
+
+1. **Components abstract away repetition** - You're using a component framework like React or Vue anyway, so duplication is managed at the component level.
+
+2. **Consistency is enforced by design** - With utilities, you're choosing values from a fixed design system, making it harder to introduce inconsistencies.
+
+3. **Change is localized** - When you do need to change something, you're editing a single component file, not hunting through multiple stylesheets.
+
+## Design System Integration
+
+Tailwind's utilities are generated from your theme configuration, ensuring consistent design tokens across your entire project:
+
+```typescript
+// From the source: Theme resolution
+theme.resolve('4', ['--spacing']) // Returns var(--spacing-4)
+theme.resolve('blue-500', ['--color']) // Returns var(--color-blue-500)
+```
+
+This means every utility is backed by your design system, and changing a theme value updates all utilities that reference it.
+
+<Info>
+  Learn more about customizing your theme in the [Adding Custom Styles](/core-concepts/adding-custom-styles) guide.
+</Info>

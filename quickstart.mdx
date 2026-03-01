@@ -1,80 +1,593 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart Guide
+description: Get started with Tailwind CSS in minutes and build your first component with utility-first styling
 ---
 
-## Get started in three steps
+# Quickstart Guide
 
-Get your documentation site running locally and make your first customization.
-
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
-
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
-
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
+Get up and running with Tailwind CSS in just a few minutes. This guide will walk you through creating a new project, installing Tailwind, and building your first component.
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  This guide covers Tailwind CSS v4.2.1. If you're upgrading from v3, check out the [migration guide](/upgrading/v3-to-v4).
 </Note>
+
+## Quick Start with Vite + React
+
+The fastest way to get started with Tailwind CSS is using Vite with React. Follow these steps to create a new project from scratch.
+
+<Steps>
+  <Step title="Create a new Vite project">
+    Use your preferred package manager to scaffold a new Vite + React project:
+
+    <CodeGroup>
+    ```bash npm
+    npm create vite@latest my-tailwind-app -- --template react
+    cd my-tailwind-app
+    ```
+
+    ```bash yarn
+    yarn create vite my-tailwind-app --template react
+    cd my-tailwind-app
+    ```
+
+    ```bash pnpm
+    pnpm create vite my-tailwind-app --template react
+    cd my-tailwind-app
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Install Tailwind CSS and the Vite plugin">
+    Install Tailwind CSS and the official Vite plugin:
+
+    <CodeGroup>
+    ```bash npm
+    npm install tailwindcss@latest @tailwindcss/vite@latest
+    ```
+
+    ```bash yarn
+    yarn add tailwindcss@latest @tailwindcss/vite@latest
+    ```
+
+    ```bash pnpm
+    pnpm add tailwindcss@latest @tailwindcss/vite@latest
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure Vite">
+    Add the Tailwind CSS plugin to your `vite.config.ts` or `vite.config.js`:
+
+    ```typescript vite.config.ts
+    import tailwindcss from '@tailwindcss/vite'
+    import react from '@vitejs/plugin-react'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [react(), tailwindcss()],
+    })
+    ```
+
+    <Tip>
+      The Vite plugin automatically detects your environment and optimizes CSS in production builds.
+    </Tip>
+  </Step>
+
+  <Step title="Import Tailwind in your CSS">
+    Create or update your main CSS file (e.g., `src/index.css`) to import Tailwind:
+
+    ```css src/index.css
+    @import 'tailwindcss';
+    ```
+
+    Then import this CSS file in your main entry point:
+
+    ```tsx src/main.tsx
+    import React from 'react'
+    import ReactDOM from 'react-dom/client'
+    import { App } from './App'
+    import './index.css'
+
+    ReactDOM.createRoot(document.getElementById('root')!).render(
+      <React.StrictMode>
+        <App />
+      </React.StrictMode>,
+    )
+    ```
+  </Step>
+
+  <Step title="Start building">
+    Run the development server and start using Tailwind's utility classes:
+
+    ```bash
+    npm run dev
+    ```
+
+    Your project is now set up with Tailwind CSS! Continue reading to learn how to build your first component.
+  </Step>
+</Steps>
+
+## Building Your First Component
+
+Let's build a beautiful card component using Tailwind's utility classes. This example demonstrates the power of utility-first CSS.
+
+### Simple Card Component
+
+Here's a complete card component with an image, title, description, and button:
+
+```tsx src/App.tsx
+export function App() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-sm rounded-lg overflow-hidden shadow-lg bg-white">
+        <img 
+          className="w-full h-48 object-cover" 
+          src="https://via.placeholder.com/400x300" 
+          alt="Placeholder"
+        />
+        <div className="p-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            Card Title
+          </h2>
+          <p className="text-gray-600 mb-4">
+            This is a simple card component built with Tailwind CSS. 
+            It includes an image, title, description, and a call-to-action button.
+          </p>
+          <button className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+            Learn More
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+### Understanding the Utilities
+
+Let's break down what each utility class does:
+
+<Tabs>
+  <Tab title="Layout">
+    ```html
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    ```
+    
+    - `min-h-screen` - Minimum height of 100vh
+    - `bg-gray-50` - Light gray background color
+    - `flex` - Display as flexbox
+    - `items-center` - Center items vertically
+    - `justify-center` - Center items horizontally
+    - `p-4` - Padding of 1rem (16px) on all sides
+  </Tab>
+  
+  <Tab title="Card Container">
+    ```html
+    <div className="max-w-sm rounded-lg overflow-hidden shadow-lg bg-white">
+    ```
+    
+    - `max-w-sm` - Maximum width of 384px
+    - `rounded-lg` - Large border radius (0.5rem)
+    - `overflow-hidden` - Hide content that overflows
+    - `shadow-lg` - Large box shadow
+    - `bg-white` - White background
+  </Tab>
+  
+  <Tab title="Image">
+    ```html
+    <img className="w-full h-48 object-cover">
+    ```
+    
+    - `w-full` - Width of 100%
+    - `h-48` - Height of 12rem (192px)
+    - `object-cover` - Cover the container while maintaining aspect ratio
+  </Tab>
+  
+  <Tab title="Typography">
+    ```html
+    <h2 className="text-2xl font-bold text-gray-900 mb-2">
+    ```
+    
+    - `text-2xl` - Font size of 1.5rem (24px)
+    - `font-bold` - Font weight of 700
+    - `text-gray-900` - Very dark gray text
+    - `mb-2` - Margin bottom of 0.5rem (8px)
+  </Tab>
+  
+  <Tab title="Button">
+    ```html
+    <button className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+    ```
+    
+    - `bg-blue-500` - Blue background
+    - `hover:bg-blue-700` - Darker blue on hover
+    - `text-white` - White text color
+    - `font-semibold` - Font weight of 600
+    - `py-2` - Vertical padding of 0.5rem
+    - `px-4` - Horizontal padding of 1rem
+    - `rounded` - Border radius of 0.25rem
+  </Tab>
+</Tabs>
+
+## Responsive Design
+
+Make your card responsive across different screen sizes using Tailwind's breakpoint system:
+
+```tsx
+export function ResponsiveCard() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      {/* Card adapts from full width on mobile to fixed width on larger screens */}
+      <div className="w-full md:max-w-md lg:max-w-lg rounded-lg overflow-hidden shadow-lg bg-white">
+        <img 
+          className="w-full h-48 md:h-56 lg:h-64 object-cover" 
+          src="https://via.placeholder.com/400x300" 
+          alt="Placeholder"
+        />
+        <div className="p-4 md:p-6">
+          {/* Text size increases on larger screens */}
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+            Responsive Card
+          </h2>
+          <p className="text-sm md:text-base text-gray-600 mb-4">
+            This card adjusts its size and typography based on screen width.
+          </p>
+          <button className="w-full md:w-auto bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded">
+            Learn More
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+<Note>
+  Tailwind uses a mobile-first approach. Unprefixed utilities apply to all screen sizes, while prefixed utilities (like `md:` and `lg:`) apply at the specified breakpoint and above.
+</Note>
+
+### Breakpoint Reference
+
+| Prefix | Min Width | Typical Device |
+|--------|-----------|----------------|
+| `sm:` | 640px | Large phones |
+| `md:` | 768px | Tablets |
+| `lg:` | 1024px | Laptops |
+| `xl:` | 1280px | Desktops |
+| `2xl:` | 1536px | Large desktops |
+
+## Hover, Focus, and Other States
+
+Tailwind makes it easy to style interactive states using variant prefixes:
+
+```tsx
+export function InteractiveButton() {
+  return (
+    <div className="flex gap-4 p-8">
+      {/* Hover effects */}
+      <button className="bg-blue-500 hover:bg-blue-700 hover:scale-105 text-white font-semibold py-2 px-4 rounded transition">
+        Hover Me
+      </button>
+      
+      {/* Focus effects */}
+      <button className="bg-green-500 focus:ring-4 focus:ring-green-300 focus:outline-none text-white font-semibold py-2 px-4 rounded">
+        Focus Me
+      </button>
+      
+      {/* Active state */}
+      <button className="bg-purple-500 active:bg-purple-800 text-white font-semibold py-2 px-4 rounded">
+        Click Me
+      </button>
+      
+      {/* Disabled state */}
+      <button className="bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2 px-4 rounded" disabled>
+        Disabled
+      </button>
+    </div>
+  )
+}
+```
+
+### Common State Variants
+
+- `hover:` - Style on mouse hover
+- `focus:` - Style when element has focus
+- `active:` - Style when element is being clicked
+- `disabled:` - Style when element is disabled
+- `group-hover:` - Style based on parent hover state
+- `dark:` - Style in dark mode
+
+<Tip>
+  Add the `transition` utility to enable smooth animations between states.
+</Tip>
+
+## Common Utility Patterns
+
+Here are some frequently used utility combinations:
+
+<CodeGroup>
+```html Centered Container
+<div className="container mx-auto px-4">
+  <!-- Content is centered with horizontal padding -->
+</div>
+```
+
+```html Flexbox Center
+<div className="flex items-center justify-center">
+  <!-- Content is centered both vertically and horizontally -->
+</div>
+```
+
+```html Grid Layout
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <!-- Responsive grid: 1 column on mobile, 2 on tablet, 3 on desktop -->
+</div>
+```
+
+```html Absolute Positioning
+<div className="relative">
+  <div className="absolute top-0 right-0 m-2">
+    <!-- Positioned in top-right corner with margin -->
+  </div>
+</div>
+```
+
+```html Truncated Text
+<p className="truncate">
+  <!-- Text overflow is hidden with ellipsis -->
+</p>
+```
+
+```html Card Shadow
+<div className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow">
+  <!-- Card with shadow that grows on hover -->
+</div>
+```
+</CodeGroup>
+
+## Quick Start with Next.js
+
+If you prefer Next.js, here's how to set up Tailwind CSS:
+
+<Steps>
+  <Step title="Create a Next.js project">
+    ```bash
+    npx create-next-app@latest my-tailwind-app
+    cd my-tailwind-app
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    <CodeGroup>
+    ```bash npm
+    npm install tailwindcss@latest @tailwindcss/postcss@latest
+    ```
+
+    ```bash yarn
+    yarn add tailwindcss@latest @tailwindcss/postcss@latest
+    ```
+
+    ```bash pnpm
+    pnpm add tailwindcss@latest @tailwindcss/postcss@latest
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure PostCSS">
+    Create a `postcss.config.js` file in your project root:
+
+    ```javascript postcss.config.js
+    module.exports = {
+      plugins: {
+        '@tailwindcss/postcss': {},
+      },
+    }
+    ```
+  </Step>
+
+  <Step title="Import Tailwind CSS">
+    Add Tailwind to your global CSS file (e.g., `app/globals.css`):
+
+    ```css app/globals.css
+    @import 'tailwindcss';
+    ```
+  </Step>
+
+  <Step title="Start building">
+    ```bash
+    npm run dev
+    ```
+
+    You're ready to use Tailwind utilities in your Next.js components!
+  </Step>
+</Steps>
+
+## Customizing Your Setup
+
+### Adding Custom Colors
+
+Define custom colors using CSS variables in your main CSS file:
+
+```css src/index.css
+@import 'tailwindcss';
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --color-accent: #f59e0b;
+}
+```
+
+Now use them in your components:
+
+```html
+<div className="bg-primary text-white">
+  Custom primary color
+</div>
+```
+
+### Creating Reusable Components
+
+Use `@layer` to add custom component styles:
+
+```css src/index.css
+@import 'tailwindcss';
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded font-semibold;
+  }
+  
+  .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-700 text-white;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-500 hover:bg-gray-700 text-white;
+  }
+}
+```
+
+Use your custom components:
+
+```html
+<button className="btn btn-primary">
+  Primary Button
+</button>
+```
+
+<Warning>
+  Only extract components when you find yourself repeating the exact same utility combinations many times. Don't prematurely abstract - embrace the utility-first approach first.
+</Warning>
+
+## Production Optimization
+
+Tailwind CSS v4 automatically optimizes your CSS for production. Here are some tips to maximize performance:
+
+### 1. Enable Minification
+
+The Vite plugin automatically minifies in production, but you can configure it:
+
+```typescript vite.config.ts
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      // Optimization is enabled by default in production
+      optimize: true,
+    }),
+  ],
+})
+```
+
+### 2. Limit Source Scanning
+
+Use the `@source` directive to limit which files Tailwind scans:
+
+```css src/index.css
+@import 'tailwindcss';
+
+@source "../src/**/*.{js,jsx,ts,tsx}";
+```
+
+### 3. Remove Unused Styles
+
+Tailwind v4 uses the Oxide engine to automatically detect and remove unused CSS. Just ensure your build process is set up correctly.
+
+<Tip>
+  Tailwind CSS v4's Rust-powered engine provides up to 10x faster builds compared to v3, with automatic optimization in production.
+</Tip>
+
+### 4. Enable Source Maps
+
+For debugging production issues:
+
+```typescript vite.config.ts
+export default defineConfig({
+  css: {
+    devSourcemap: true,
+  },
+  plugins: [tailwindcss()],
+})
+```
+
+## Next Steps
+
+Now that you've built your first Tailwind CSS project, explore more advanced features:
+
+<CardGroup cols={2}>
+  <Card
+    title="Core Concepts"
+    icon="book"
+    href="/core-concepts/utility-first"
+  >
+    Deep dive into utility-first CSS and Tailwind's philosophy
+  </Card>
+  <Card
+    title="Responsive Design"
+    icon="mobile"
+    href="/core-concepts/responsive-design"
+  >
+    Master responsive layouts with Tailwind's breakpoint system
+  </Card>
+  <Card
+    title="Dark Mode"
+    icon="moon"
+    href="/core-concepts/dark-mode"
+  >
+    Implement dark mode with a single class prefix
+  </Card>
+  <Card
+    title="Customization"
+    icon="palette"
+    href="/customization/theme"
+  >
+    Customize your theme with colors, spacing, and more
+  </Card>
+  <Card
+    title="Editor Setup"
+    icon="code"
+    href="/editor-setup"
+  >
+    Configure IntelliSense for autocomplete and linting
+  </Card>
+  <Card
+    title="Adding Custom Styles"
+    icon="paintbrush"
+    href="/core-concepts/adding-custom-styles"
+  >
+    Learn when and how to add custom CSS to your Tailwind project
+  </Card>
+</CardGroup>
+
+## Common Issues
+
+### Styles Not Applying
+
+If your styles aren't working:
+
+1. Ensure you've imported Tailwind CSS in your main CSS file
+2. Check that your CSS file is imported in your main entry point
+3. Verify the Vite plugin is configured correctly
+4. Restart your development server
+
+### IntelliSense Not Working
+
+For better autocomplete:
+
+1. Install the [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) extension
+2. Configure your editor following the [editor setup guide](/editor-setup)
+
+### Build Performance
+
+For faster builds:
+
+- Limit source file scanning with `@source` directives
+- Use the Oxide engine (included by default in v4)
+- Only optimize CSS in production builds
+
+<Info>
+  Need more help? Check out our [installation guide](/installation) for detailed setup instructions or join the [Tailwind CSS Discord](https://tailwindcss.com/discord) community.
+</Info>

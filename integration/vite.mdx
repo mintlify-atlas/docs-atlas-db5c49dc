@@ -1,0 +1,273 @@
+---
+title: "Vite Plugin"
+description: "Integrate Tailwind CSS into your Vite projects"
+---
+
+The `@tailwindcss/vite` plugin provides seamless integration with Vite, automatically processing your CSS files and enabling hot module replacement (HMR) for fast development.
+
+## Installation
+
+<Steps>
+  <Step title="Install the plugin">
+    Install the `@tailwindcss/vite` package:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm install -D @tailwindcss/vite
+    ```
+
+    ```bash pnpm
+    pnpm add -D @tailwindcss/vite
+    ```
+
+    ```bash yarn
+    yarn add -D @tailwindcss/vite
+    ```
+
+    ```bash bun
+    bun add -D @tailwindcss/vite
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure Vite">
+    Add the plugin to your `vite.config.js` or `vite.config.ts`:
+
+    ```typescript vite.config.ts
+    import tailwindcss from '@tailwindcss/vite'
+    import { defineConfig } from 'vite'
+
+    export default defineConfig({
+      plugins: [tailwindcss()],
+    })
+    ```
+  </Step>
+
+  <Step title="Import Tailwind in your CSS">
+    Add the Tailwind CSS import to your main CSS file:
+
+    ```css src/index.css
+    @import 'tailwindcss';
+    ```
+  </Step>
+
+  <Step title="Import CSS in your app">
+    Import your CSS file in your application entry point:
+
+    ```typescript src/main.ts
+    import './index.css'
+    ```
+  </Step>
+</Steps>
+
+## Configuration
+
+The Vite plugin accepts configuration options:
+
+```typescript vite.config.ts
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      optimize: true,
+    }),
+  ],
+})
+```
+
+### Options
+
+<ResponseField name="optimize" type="boolean | { minify?: boolean }">
+  Enable CSS optimization and minification.
+  
+  - `false` - Disable optimization (default in development)
+  - `true` - Enable optimization with minification (default in build mode)
+  - `{ minify: false }` - Optimize without minifying
+  
+  **Default:** Automatically enabled for production builds
+</ResponseField>
+
+## How It Works
+
+The Vite plugin operates in two modes:
+
+### Development Mode (serve)
+
+In development, the plugin:
+
+1. **Intercepts CSS files** - Transforms files that import Tailwind CSS
+2. **Scans for candidates** - Automatically detects Tailwind classes in your source files
+3. **Generates CSS** - Builds utilities on-demand
+4. **Enables HMR** - Provides hot module replacement for instant updates
+5. **Watches files** - Monitors template files (HTML, JSX, Vue, etc.) for changes
+
+When you add or modify Tailwind classes in your templates, the plugin triggers a rebuild and the changes appear instantly in your browser without a full page reload.
+
+### Build Mode
+
+During production builds, the plugin:
+
+1. **Processes CSS** - Transforms all CSS files that use Tailwind
+2. **Scans all sources** - Detects all Tailwind classes across your entire project
+3. **Generates optimized CSS** - Builds the final CSS with all utilities
+4. **Optimizes output** - Minifies and optimizes using Lightning CSS (when enabled)
+
+## Source Maps
+
+The plugin automatically generates source maps in development when `css.devSourcemap` is enabled in your Vite config:
+
+```typescript vite.config.ts
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  css: {
+    devSourcemap: true,
+  },
+  plugins: [tailwindcss()],
+})
+```
+
+## File Watching
+
+The plugin automatically watches:
+
+- **Template files** - HTML, JSX, TSX, Vue, Svelte, Astro files
+- **CSS files** - Your CSS files that import Tailwind
+- **Config files** - Configuration and plugin files
+- **Custom sources** - Files specified via `@source` directives
+
+### Full Reload Triggers
+
+Changes to files outside the module graph (like standalone HTML or PHP files) trigger a full page reload automatically.
+
+## Content Detection
+
+The plugin uses intelligent content detection:
+
+```typescript
+// The plugin scans these patterns by default:
+**/*.{html,js,ts,jsx,tsx,vue,svelte,astro}
+```
+
+You can customize content sources using the `@source` directive in your CSS:
+
+```css
+@import 'tailwindcss';
+@source '../templates/**/*.php';
+@source './components/**/*.vue';
+```
+
+## Optimization
+
+### Development
+
+By default, CSS is not optimized in development for faster builds:
+
+```typescript vite.config.ts
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      optimize: false, // Faster builds
+    }),
+  ],
+})
+```
+
+### Production
+
+In production, optimization is enabled automatically:
+
+```typescript vite.config.ts
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      optimize: true, // Minified and optimized
+    }),
+  ],
+})
+```
+
+### Custom Optimization
+
+Optimize without minification:
+
+```typescript vite.config.ts
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      optimize: {
+        minify: false, // Optimize but preserve formatting
+      },
+    }),
+  ],
+})
+```
+
+## Framework Integration
+
+### React
+
+```typescript vite.config.ts
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+})
+```
+
+### Vue
+
+```typescript vite.config.ts
+import vue from '@vitejs/plugin-vue'
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [vue(), tailwindcss()],
+})
+```
+
+### Svelte
+
+```typescript vite.config.ts
+import { svelte } from '@sveltejs/vite-plugin-svelte'
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [svelte(), tailwindcss()],
+})
+```
+
+## Environment API Support
+
+The plugin supports both the legacy and modern Vite Environment API (Vite 6+), automatically detecting which API is available.
+
+<Note>
+  The plugin uses a Rust-based scanner for extremely fast candidate detection and supports Vite's hot module replacement for instant updates during development.
+</Note>
+
+## Troubleshooting
+
+### CSS Not Updating
+
+If your CSS isn't updating in development:
+
+1. Ensure you've imported your CSS file in your app entry point
+2. Check that the CSS file contains `@import 'tailwindcss'`
+3. Verify that your template files are being watched
+
+### Build Performance
+
+For large projects, consider:
+
+- Disabling optimization in development: `optimize: false`
+- Using specific content patterns with `@source` to limit scanning
+- Ensuring your project has a `.gitignore` to exclude `node_modules`

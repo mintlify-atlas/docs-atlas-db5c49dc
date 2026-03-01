@@ -1,0 +1,358 @@
+---
+title: "PostCSS Plugin"
+description: "Use Tailwind CSS as a PostCSS plugin in any build tool"
+---
+
+The `@tailwindcss/postcss` plugin allows you to integrate Tailwind CSS into any build tool that supports PostCSS, including Next.js, webpack, Parcel, and more.
+
+## Installation
+
+<Steps>
+  <Step title="Install the plugin">
+    Install the `@tailwindcss/postcss` package:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm install -D @tailwindcss/postcss
+    ```
+
+    ```bash pnpm
+    pnpm add -D @tailwindcss/postcss
+    ```
+
+    ```bash yarn
+    yarn add -D @tailwindcss/postcss
+    ```
+
+    ```bash bun
+    bun add -D @tailwindcss/postcss
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Configure PostCSS">
+    Add the plugin to your `postcss.config.js`:
+
+    ```javascript postcss.config.js
+    module.exports = {
+      plugins: {
+        '@tailwindcss/postcss': {},
+      },
+    }
+    ```
+
+    Or using ES modules:
+
+    ```javascript postcss.config.mjs
+    export default {
+      plugins: {
+        '@tailwindcss/postcss': {},
+      },
+    }
+    ```
+  </Step>
+
+  <Step title="Import Tailwind in your CSS">
+    Add the Tailwind CSS import to your main CSS file:
+
+    ```css src/styles.css
+    @import 'tailwindcss';
+    ```
+  </Step>
+</Steps>
+
+## Configuration
+
+The PostCSS plugin accepts several configuration options:
+
+```javascript postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {
+      base: './src',
+      optimize: true,
+      transformAssetUrls: true,
+    },
+  },
+}
+```
+
+### Options
+
+<ResponseField name="base" type="string">
+  The base directory to scan for class candidates.
+  
+  **Default:** `process.cwd()` (current working directory)
+</ResponseField>
+
+<ResponseField name="optimize" type="boolean | { minify?: boolean }">
+  Enable CSS optimization and minification.
+  
+  - `false` - No optimization
+  - `true` - Full optimization with minification
+  - `{ minify: false }` - Optimize without minifying
+  
+  **Default:** `true` when `NODE_ENV === 'production'`, otherwise `false`
+</ResponseField>
+
+<ResponseField name="transformAssetUrls" type="boolean">
+  Enable or disable asset URL rewriting for relative paths.
+  
+  **Default:** `true`
+</ResponseField>
+
+## How It Works
+
+The PostCSS plugin processes your CSS in the PostCSS pipeline:
+
+1. **Detects Tailwind CSS** - Identifies files that use Tailwind directives
+2. **Parses CSS** - Converts PostCSS AST to Tailwind's internal AST
+3. **Compiles utilities** - Generates CSS for detected Tailwind classes
+4. **Scans content** - Finds all Tailwind classes in your source files
+5. **Optimizes** - Optionally minifies the output using Lightning CSS
+6. **Returns CSS** - Converts back to PostCSS AST for further processing
+
+### Caching
+
+The plugin uses intelligent caching to speed up rebuilds:
+
+- **Compiler cache** - Reuses the compiler instance when possible
+- **Scanner cache** - Maintains a list of scanned files
+- **CSS cache** - Avoids regenerating unchanged CSS
+- **Optimization cache** - Caches optimized output
+
+The cache is automatically invalidated when:
+- CSS files are modified
+- Configuration files change
+- Plugin files are updated
+- Template files are added or removed
+
+## Dependency Tracking
+
+The plugin automatically tracks dependencies and reports them to PostCSS:
+
+```javascript
+// Dependencies are reported for:
+- CSS files imported with @import
+- JavaScript configuration files
+- Plugin files
+- All scanned content files
+```
+
+This ensures your build tool rebuilds when any relevant file changes.
+
+## Content Detection
+
+The plugin automatically scans your project for Tailwind classes:
+
+```javascript
+// Default pattern:
+**/*
+
+// From the base directory
+```
+
+Customize content sources using the `@source` directive:
+
+```css
+@import 'tailwindcss';
+@source '../templates/**/*.html';
+@source './components/**/*.jsx';
+```
+
+## Integration Examples
+
+### Next.js
+
+```javascript postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
+}
+```
+
+Then import your CSS in `_app.js` or `layout.js`:
+
+```javascript app/layout.js
+import './globals.css'
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  )
+}
+```
+
+### Webpack
+
+With `css-loader` and `postcss-loader`:
+
+```javascript webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: [
+          'style-loader',
+          'css-loader',
+          'postcss-loader', // Will use postcss.config.js
+        ],
+      },
+    ],
+  },
+}
+```
+
+### Parcel
+
+Parcel automatically detects `postcss.config.js`. Just import your CSS:
+
+```javascript src/index.js
+import './styles.css'
+```
+
+### Laravel Mix
+
+```javascript webpack.mix.js
+const mix = require('laravel-mix')
+
+mix
+  .postCss('resources/css/app.css', 'public/css', [
+    require('@tailwindcss/postcss'),
+  ])
+```
+
+## PostCSS Import
+
+The plugin works seamlessly with `postcss-import`:
+
+```javascript postcss.config.js
+module.exports = {
+  plugins: {
+    'postcss-import': {},
+    '@tailwindcss/postcss': {},
+  },
+}
+```
+
+This allows you to split your CSS into multiple files:
+
+```css styles.css
+@import './base.css';
+@import './components.css';
+@import './utilities.css';
+```
+
+The plugin automatically fixes relative paths when files are imported, ensuring asset URLs remain correct.
+
+## Optimization
+
+### Development
+
+Disable optimization for faster builds:
+
+```javascript postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {
+      optimize: false,
+    },
+  },
+}
+```
+
+### Production
+
+Enable optimization with minification:
+
+```javascript postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {
+      optimize: process.env.NODE_ENV === 'production',
+    },
+  },
+}
+```
+
+### Optimize Without Minification
+
+```javascript postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {
+      optimize: {
+        minify: false,
+      },
+    },
+  },
+}
+```
+
+## CSS Modules
+
+The plugin automatically detects CSS Module files (`*.module.css`) and disables the `@property` polyfill to avoid build errors with non-pure selectors.
+
+```css Button.module.css
+@import 'tailwindcss';
+
+.button {
+  @apply px-4 py-2 bg-blue-500 text-white rounded;
+}
+```
+
+## Rebuild Strategies
+
+The plugin uses two rebuild strategies:
+
+### Incremental Rebuild
+
+When only template files change:
+- Scans changed files for new candidates
+- Rebuilds CSS only if new classes are found
+- Very fast, typically under 10ms
+
+### Full Rebuild
+
+When CSS, config, or plugin files change:
+- Clears the require cache
+- Recreates the compiler
+- Scans all content files
+- Rebuilds the entire CSS output
+
+<Note>
+  The plugin uses an AST-to-AST transformation between PostCSS and Tailwind's internal representation for optimal performance.
+</Note>
+
+## Troubleshooting
+
+### Changes Not Detected
+
+If your build tool isn't detecting changes:
+
+1. Ensure your build tool is configured to watch CSS files
+2. Check that dependency messages are being processed
+3. Verify the `base` option points to the correct directory
+
+### Slow Builds
+
+For large projects:
+
+1. Use specific content patterns with `@source`
+2. Exclude unnecessary directories (like `node_modules`)
+3. Disable optimization in development
+4. Consider using the Vite plugin for better performance
+
+### Import Errors
+
+If you see import-related errors:
+
+1. Ensure `postcss-import` runs before `@tailwindcss/postcss`
+2. Check that all imported files exist
+3. Verify relative paths are correct

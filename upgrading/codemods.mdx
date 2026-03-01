@@ -1,0 +1,799 @@
+---
+title: Automated Upgrade Tool
+description: Use the @tailwindcss/upgrade package to automatically migrate your project from v3 to v4
+---
+
+The `@tailwindcss/upgrade` package provides automated codemods to migrate your Tailwind CSS project from v3 to v4. It handles CSS files, JavaScript configuration, and template files.
+
+## Installation
+
+You don't need to install the upgrade tool. Run it directly with `npx`:
+
+```bash
+npx @tailwindcss/upgrade
+```
+
+<Warning>
+**Important:** The upgrade tool requires a clean git working directory. Commit or stash your changes before running.
+</Warning>
+
+## Basic usage
+
+Navigate to your project root and run:
+
+```bash
+cd your-project
+npx @tailwindcss/upgrade
+```
+
+The tool will:
+
+1. Verify your git directory is clean
+2. Check your Tailwind CSS version
+3. Discover and migrate CSS files
+4. Convert JavaScript configuration to CSS
+5. Update template files with new class names
+6. Update dependencies to v4
+7. Migrate PostCSS configuration if needed
+
+## Command-line options
+
+### Specify CSS files
+
+By default, the tool discovers CSS files automatically. To specify specific files:
+
+```bash
+npx @tailwindcss/upgrade src/styles.css
+```
+
+Multiple files:
+
+```bash
+npx @tailwindcss/upgrade src/styles.css src/components.css
+```
+
+### Force migration
+
+Bypass the git clean check (not recommended):
+
+```bash
+npx @tailwindcss/upgrade --force
+```
+
+### Custom config path
+
+Specify a custom Tailwind configuration file:
+
+```bash
+npx @tailwindcss/upgrade --config ./config/tailwind.config.js
+```
+
+### Show help
+
+Display usage information:
+
+```bash
+npx @tailwindcss/upgrade --help
+```
+
+### Show version
+
+Display the tool version:
+
+```bash
+npx @tailwindcss/upgrade --version
+```
+
+## What gets migrated
+
+### CSS file migrations
+
+The tool performs these CSS transformations:
+
+#### Tailwind directives
+
+**Before:**
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+**After:**
+```css
+@import "tailwindcss";
+```
+
+#### Custom imports
+
+**Before:**
+```css
+@import "./components.css";
+@tailwind utilities;
+```
+
+**After:**
+```css
+@import "./components.css" layer(components);
+@import "tailwindcss";
+```
+
+#### Layer utilities
+
+**Before:**
+```css
+@layer utilities {
+  .content-auto {
+    content-visibility: auto;
+  }
+}
+```
+
+**After:**
+```css
+@utility content-auto {
+  content-visibility: auto;
+}
+```
+
+#### Apply statements
+
+**Before:**
+```css
+.btn {
+  @apply px-4 py-2 bg-blue-500 rounded;
+}
+```
+
+**After:**
+```css
+.btn {
+  @apply px-4 py-2 bg-blue-500 rounded-sm;
+}
+```
+
+Note: Class names in `@apply` are updated to v4 syntax.
+
+#### Media screen queries
+
+**Before:**
+```css
+@media screen(sm) {
+  /* ... */
+}
+```
+
+**After:**
+```css
+@media (width >= 640px) {
+  /* ... */
+}
+```
+
+### JavaScript config migrations
+
+The tool converts your `tailwind.config.js` to CSS:
+
+#### Theme customization
+
+**Before:**
+```js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          // ...
+        },
+      },
+      spacing: {
+        '128': '32rem',
+      },
+      fontFamily: {
+        display: ['Inter', 'sans-serif'],
+      },
+    },
+  },
+}
+```
+
+**After:**
+```css
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  
+  /* Spacing */
+  --spacing-128: 32rem;
+  
+  /* Fonts */
+  --font-display: "Inter", sans-serif;
+}
+```
+
+#### Container configuration
+
+**Before:**
+```js
+module.exports = {
+  theme: {
+    container: {
+      center: true,
+      padding: '2rem',
+    },
+  },
+}
+```
+
+**After:**
+```css
+@theme {
+  --container-center: true;
+  --container-padding: 2rem;
+}
+```
+
+#### Dark mode
+
+**Before:**
+```js
+module.exports = {
+  darkMode: 'class',
+}
+```
+
+**After:**
+```css
+@variant dark (&:where(.dark, .dark *));
+```
+
+#### Custom variants
+
+**Before:**
+```js
+plugin(function({ addVariant }) {
+  addVariant('hocus', ['&:hover', '&:focus'])
+  addVariant('supports-grid', '@supports (display: grid)')
+})
+```
+
+**After:**
+```css
+@custom-variant hocus (&:hover, &:focus);
+@custom-variant supports-grid (@supports (display: grid));
+```
+
+#### Data/aria variants
+
+**Before:**
+```js
+theme: {
+  data: {
+    checked: 'ui~="checked"',
+  },
+  aria: {
+    invalid: 'invalid="true"',
+  },
+}
+```
+
+**After:**
+```css
+@custom-variant data-checked (&[data-ui~="checked"]);
+@custom-variant aria-invalid (&[aria-invalid="true"]);
+```
+
+### Template file migrations
+
+The tool updates class names in all your template files:
+
+#### Class name updates
+
+**Before:**
+```html
+<div class="shadow rounded blur">
+  <button class="start-0 bg-left-top">
+    Click me
+  </button>
+</div>
+```
+
+**After:**
+```html
+<div class="shadow-sm rounded-sm blur-sm">
+  <button class="inset-s-0 bg-top-left">
+    Click me
+  </button>
+</div>
+```
+
+#### Arbitrary values to named values
+
+The tool converts arbitrary values to named values where possible:
+
+**Before:**
+```html
+<div class="h-[1lh] mb-[-32rem] blur-[4px]">
+```
+
+**After:**
+```html
+<div class="h-lh -mb-128 blur-xs">
+```
+
+#### Variant order
+
+Class variants are canonicalized to the correct order:
+
+**Before:**
+```html
+<div class="hover:sm:flex">
+```
+
+**After:**
+```html
+<div class="sm:hover:flex">
+```
+
+#### Group variants
+
+Some group/peer patterns are updated:
+
+**Before:**
+```html
+<div class="group">
+  <div class="group-[]:flex">
+</div>
+```
+
+**After:**
+```html
+<div class="group">
+  <div class="in-[.group]:flex">
+</div>
+```
+
+#### Modifier shorthand
+
+Modifiers are converted to the new syntax:
+
+**Before:**
+```html
+<div class="text-sm/[18px]">
+```
+
+**After:**
+```html
+<div class="text-sm/[1.2857]">
+```
+
+### Dependency updates
+
+The tool updates these packages to their latest versions:
+
+```bash
+tailwindcss@latest
+@tailwindcss/cli@latest
+@tailwindcss/postcss@latest
+@tailwindcss/vite@latest
+@tailwindcss/node@latest
+@tailwindcss/oxide@latest
+prettier-plugin-tailwindcss@latest
+```
+
+Only packages already in your `package.json` are updated.
+
+### PostCSS config migration
+
+For PostCSS-based projects:
+
+**Before:**
+```js
+// postcss.config.js
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+**After:**
+```js
+// postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
+}
+```
+
+Note: Autoprefixer is removed as it's now built into Tailwind CSS v4.
+
+## File discovery
+
+The upgrade tool automatically discovers files to migrate:
+
+### CSS files
+
+Searches for `**/*.css` files while:
+
+- Respecting `.gitignore` rules
+- Skipping `node_modules`
+- Only processing files containing Tailwind directives
+
+### Template files
+
+Scans files based on your `@source` directives or discovers automatically:
+
+- JavaScript: `.js`, `.jsx`, `.ts`, `.tsx`
+- Vue: `.vue`
+- Svelte: `.svelte`
+- HTML: `.html`, `.htm`
+- PHP: `.php`
+- Ruby: `.erb`, `.haml`, `.slim`
+- And more...
+
+### Ignored files
+
+These are automatically skipped:
+
+- `node_modules/`
+- `.git/`
+- `.next/`
+- `.turbo/`
+- `.vercel/`
+- `.pnpm-store/`
+- Binary files (`.png`, `.jpg`, `.wasm`, `.node`, etc.)
+- Log files (`.log`)
+- Database files (`.db`, `.sqlite`)
+
+## Migration strategies
+
+The tool uses several strategies to ensure safe migrations:
+
+### Safe migration checks
+
+Before migrating a class, the tool verifies:
+
+1. **Not in a code comment** - Skips migrations in comments
+2. **Not in a string literal** - Avoids changing unrelated strings
+3. **Not in event handlers** - Preserves JavaScript like `addEventListener('blur', ...)`
+4. **Valid in context** - Ensures the migration makes sense
+
+**Example of what's NOT migrated:**
+
+```js
+// This 'blur' is NOT changed to 'blur-sm'
+addEventListener('blur', () => {});
+
+// This IS changed
+const classes = 'blur rounded shadow';
+// Becomes: 'blur-sm rounded-sm shadow-sm'
+```
+
+### Canonicalization
+
+Classes are canonicalized to their preferred form:
+
+- Variants in the correct order
+- Arbitrary values simplified where possible
+- CSS variable syntax updated
+- Modifiers in standard format
+
+### Caching
+
+The tool caches migration results for performance:
+
+- Each unique class is processed once
+- Results are reused across all files
+- Significantly speeds up large projects
+
+## Handling edge cases
+
+### Multiple config files
+
+For monorepos or projects with multiple configs:
+
+```bash
+npx @tailwindcss/upgrade --config ./apps/web/tailwind.config.js
+```
+
+The tool handles:
+
+- Multiple CSS entry points
+- Shared configuration files
+- Workspace dependencies
+
+### Dynamic class generation
+
+Some dynamic classes can't be migrated automatically:
+
+```js
+// These WON'T be migrated
+const size = 'shadow'
+const className = `${size}`
+
+// This WILL be migrated
+const className = 'shadow rounded'
+```
+
+For dynamic classes:
+
+1. Review the migration output
+2. Manually update dynamic class generation
+3. Use a linter to catch issues
+
+### Template syntax
+
+The tool understands various template syntaxes:
+
+**Vue:**
+```html
+<div :class="'shadow rounded'">  <!-- Migrated -->
+<div class="shadow rounded">     <!-- Migrated -->
+```
+
+**React:**
+```jsx
+<div className="shadow rounded"> {/* Migrated */}
+<div className={'shadow rounded'}> {/* Migrated */}
+```
+
+**Angular:**
+```html
+<div class="shadow rounded">     <!-- Migrated -->
+<div [class]="'shadow rounded'"> <!-- Migrated -->
+```
+
+### Preserving formatting
+
+The tool attempts to preserve:
+
+- Indentation
+- Line breaks
+- Code style
+- Comments
+
+<Note>
+CSS files are formatted using Prettier after migration for consistency.
+</Note>
+
+## After migration
+
+### Review changes
+
+Always review the changes made:
+
+```bash
+git diff
+```
+
+Look for:
+
+- Unexpected class changes
+- Configuration that wasn't migrated
+- Template files that need manual updates
+
+### Test your build
+
+Run your build to catch any issues:
+
+```bash
+npm run build
+```
+
+Common issues:
+
+- Missing dependencies
+- Plugin compatibility
+- Custom configuration that needs manual migration
+
+### Visual testing
+
+Perform visual regression testing:
+
+- Check that UI looks correct
+- Verify dark mode still works
+- Test responsive breakpoints
+- Validate animations and transitions
+
+### Commit changes
+
+Once verified, commit the migration:
+
+```bash
+git add .
+git commit -m "Migrate to Tailwind CSS v4"
+```
+
+## Troubleshooting
+
+### Tool crashes
+
+If the upgrade tool crashes:
+
+```bash
+# Ensure clean git state
+git status
+
+# Update npm/pnpm/yarn
+npm install -g npm@latest
+
+# Try with --force if needed
+npx @tailwindcss/upgrade --force
+```
+
+### Version mismatch
+
+```bash
+Version mismatch
+
+- "tailwindcss": "^3.4.19" (expected)
++ "tailwindcss": "3.4.19" (installed)
+```
+
+**Solution:**
+
+```bash
+npm install
+npx @tailwindcss/upgrade
+```
+
+### Config not migrating
+
+Some configs require manual migration:
+
+- Complex plugin functions
+- Dynamic theme values
+- Custom match variants with complex logic
+
+Check the output for warnings about unmigrated config.
+
+### Classes not updating
+
+If classes aren't migrated:
+
+1. **Check file extension** - Ensure the file type is recognized
+2. **Check .gitignore** - File might be ignored
+3. **Check syntax** - Dynamic classes won't migrate
+4. **Run manually** - Specify the file explicitly
+
+### Build errors after migration
+
+If you get build errors:
+
+1. **Clear build cache:**
+   ```bash
+   rm -rf .next node_modules/.cache
+   ```
+
+2. **Reinstall dependencies:**
+   ```bash
+   rm -rf node_modules
+   npm install
+   ```
+
+3. **Check for plugin updates:**
+   - Ensure third-party plugins support v4
+   - Update or remove incompatible plugins
+
+## Advanced usage
+
+### Incremental migration
+
+For large projects, migrate incrementally:
+
+<Steps>
+
+### Migrate one CSS file
+
+```bash
+npx @tailwindcss/upgrade src/app.css
+```
+
+### Test the changes
+
+Build and test thoroughly.
+
+### Migrate additional files
+
+```bash
+npx @tailwindcss/upgrade src/components.css
+```
+
+### Repeat until complete
+
+Continue until all files are migrated.
+
+</Steps>
+
+### Custom migrations
+
+For custom migrations beyond what the tool provides:
+
+1. Use the tool for standard migrations
+2. Write custom scripts for project-specific patterns
+3. Use find/replace for bulk updates
+4. Leverage editor regex capabilities
+
+### Monorepo migration
+
+For monorepos:
+
+```bash
+# Migrate each workspace separately
+cd packages/web
+npx @tailwindcss/upgrade
+
+cd ../admin
+npx @tailwindcss/upgrade
+```
+
+Or from the root:
+
+```bash
+npx @tailwindcss/upgrade packages/web/src/styles.css
+npx @tailwindcss/upgrade packages/admin/src/styles.css
+```
+
+## Limitations
+
+### What's NOT migrated automatically
+
+<Warning>
+The following require manual migration:
+</Warning>
+
+1. **Complex JavaScript plugins** - Custom plugin logic
+2. **Dynamic class generation** - Runtime-generated classes
+3. **Some theme functions** - Complex theme() usage
+4. **Custom CSS-in-JS** - Styled-components, Emotion, etc.
+5. **Build scripts** - Custom build configurations
+6. **Third-party plugins** - May need updates from maintainers
+
+### Framework-specific considerations
+
+**Next.js:**
+- App Router vs Pages Router differences
+- Server Components considerations
+- Image optimization integration
+
+**Remix:**
+- Route-based styles
+- PostCSS integration
+
+**SvelteKit:**
+- Scoped styles in components
+- Vite plugin integration
+
+## Migration checklist
+
+Use this to track your migration:
+
+- [ ] Backup project or commit all changes
+- [ ] Run `npx @tailwindcss/upgrade`
+- [ ] Review `git diff` for all changes
+- [ ] Test build process
+- [ ] Visual regression testing
+- [ ] Update custom plugins if needed
+- [ ] Check dark mode implementation
+- [ ] Verify responsive design
+- [ ] Test in all target browsers
+- [ ] Update documentation
+- [ ] Commit the migration
+
+## Getting help
+
+If you need assistance:
+
+- Read the [Upgrade Guide](/upgrading/upgrade-guide)
+- Check [v3 to v4 Migration Guide](/upgrading/v3-to-v4)
+- Visit [GitHub Discussions](https://github.com/tailwindlabs/tailwindcss/discussions)
+- Report bugs at [GitHub Issues](https://github.com/tailwindlabs/tailwindcss/issues)
+- Review the [CHANGELOG](https://github.com/tailwindlabs/tailwindcss/blob/main/CHANGELOG.md)

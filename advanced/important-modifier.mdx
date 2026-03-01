@@ -1,0 +1,407 @@
+---
+title: Important Modifier
+description: Use the ! modifier to make utilities important and override other styles
+---
+
+## Overview
+
+Tailwind CSS provides an `!` modifier (exclamation mark) that adds `!important` to utility declarations. This is useful when you need to override other styles with higher specificity.
+
+## Basic Usage
+
+Add an `!` prefix to any utility to make it important:
+
+```html
+<div class="text-red-500 !text-blue-500">
+  This text is blue (important overrides red)
+</div>
+```
+
+Generated CSS:
+```css
+.text-red-500 {
+  color: #ef4444;
+}
+
+.\!text-blue-500 {
+  color: #3b82f6 !important;
+}
+```
+
+<Note>
+The `!important` flag increases the specificity of the declaration, making it override other conflicting styles regardless of selector specificity.
+</Note>
+
+## With Variants
+
+The important modifier can be combined with any variant:
+
+```html
+<button class="bg-gray-500 hover:!bg-blue-500">
+  Gray by default, but blue on hover (important)
+</button>
+
+<div class="text-sm md:!text-lg">
+  Small text, large on medium screens (important)
+</div>
+```
+
+### Multiple Variants
+
+```html
+<div class="opacity-50 dark:hover:!opacity-100">
+  Low opacity, but full opacity on hover in dark mode (important)
+</div>
+```
+
+## Common Use Cases
+
+### Overriding Third-Party Styles
+
+When integrating third-party components with their own CSS:
+
+```html
+<!-- Override a UI library's default button color -->
+<button class="ui-button !bg-brand-primary !text-white">
+  Custom Button
+</button>
+```
+
+### Utility-First Overrides
+
+When you need to override a base style without changing it:
+
+```html
+<style>
+  .prose a {
+    color: blue;
+    text-decoration: underline;
+  }
+</style>
+
+<div class="prose">
+  <a href="#" class="!text-red-500 !no-underline">
+    This link breaks the prose styling
+  </a>
+</div>
+```
+
+### Responsive Overrides
+
+```html
+<!-- Desktop styles win over mobile -->
+<div class="text-sm lg:!text-xl">
+  Small on mobile, but ALWAYS extra large on large screens
+</div>
+```
+
+### State-Based Overrides
+
+```html
+<input 
+  class="border-gray-300 focus:border-blue-500"
+  data-error="true"
+  class="data-[error]:!border-red-500"
+/>
+```
+
+## Important Position
+
+The `!` modifier can be placed at different positions:
+
+### Before the Utility (Standard)
+
+```html
+<div class="!text-blue-500">
+  Standard position
+</div>
+```
+
+### After a Variant
+
+```html
+<div class="hover:!text-blue-500">
+  Important on hover
+</div>
+```
+
+### Multiple Variants
+
+```html
+<div class="lg:dark:!bg-blue-500">
+  Important on large dark screens
+</div>
+```
+
+<Tip>
+While you can place `!` at different positions, the standard convention is to place it immediately before the utility name for consistency.
+</Tip>
+
+## With Arbitrary Values
+
+The important modifier works with arbitrary values:
+
+```html
+<div class="!text-[#ff6b9d]">
+  Important custom color
+</div>
+
+<div class="hover:!px-[3.75rem]">
+  Important custom padding on hover
+</div>
+```
+
+## With Custom Utilities
+
+The important modifier works with custom utilities defined using `@utility`:
+
+```css
+@utility text-trim {
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+}
+```
+
+```html
+<p class="!text-trim">
+  Important text trimming
+</p>
+```
+
+## Compound Utilities
+
+The important modifier applies to all properties in compound utilities:
+
+```html
+<div class="!inset-0">
+  <!-- All inset properties become important -->
+</div>
+```
+
+Generated CSS:
+```css
+.\!inset-0 {
+  inset: 0 !important;
+}
+```
+
+## Limitations and Caveats
+
+<Warning>
+**Important Considerations:**
+
+1. Overusing `!important` makes styles harder to override later
+2. Creates specificity wars that make CSS harder to maintain
+3. Can make debugging more difficult
+4. Should be used as a last resort, not a first solution
+</Warning>
+
+### Doesn't Work With These Patterns
+
+The important modifier cannot be used in certain contexts:
+
+```css
+/* ❌ Cannot use in @apply */
+.my-class {
+  @apply !text-blue-500; /* Not supported */
+}
+
+/* ✅ Apply important utilities directly */
+.my-class {
+  @apply text-blue-500; /* Then add important if needed */
+}
+```
+
+### Specificity Doesn't Change
+
+Important changes the weight of the declaration, not the selector specificity:
+
+```html
+<!-- Both of these are equally specific -->
+<div class="text-red-500"></div>
+<div class="!text-red-500"></div>
+
+<!-- The important one wins, but they have the same specificity -->
+```
+
+## Alternative Solutions
+
+### Increase Specificity Instead
+
+Often you can solve the problem by increasing specificity:
+
+```html
+<!-- Instead of !important -->
+<div class="bg-red-500">
+  <div class="!bg-blue-500">Blue</div>
+</div>
+
+<!-- Consider restructuring -->
+<div class="bg-red-500">
+  <div class="[&]:bg-blue-500">Blue</div>
+</div>
+```
+
+### Reorder Your HTML
+
+Sometimes reordering classes is enough:
+
+```html
+<!-- Later classes override earlier ones (same specificity) -->
+<div class="bg-red-500 bg-blue-500">
+  Blue background (no important needed)
+</div>
+```
+
+### Use More Specific Variants
+
+Sometimes a more specific variant solves the issue:
+
+```html
+<!-- Instead of important -->
+<div class="opacity-50 !opacity-100">
+
+<!-- Use a more specific condition -->
+<div class="opacity-50 focus-within:opacity-100">
+```
+
+### Custom Property Override
+
+For components, consider using CSS custom properties:
+
+```css
+.button {
+  background: var(--button-bg, theme(--color-blue-500));
+}
+```
+
+```html
+<button class="button" style="--button-bg: red">
+  Custom background
+</button>
+```
+
+## Best Practices
+
+<Tip>
+**Recommendations:**
+
+1. **Last Resort**: Only use `!` when other solutions don't work
+2. **Document Usage**: Add comments explaining why important was necessary
+3. **Temporary Fix**: Consider refactoring to remove important later
+4. **Third-Party Override**: Most justified when overriding external libraries
+5. **Team Agreement**: Establish team guidelines on important usage
+</Tip>
+
+### When It's Acceptable
+
+✅ Overriding third-party component styles
+✅ Quick prototyping and testing
+✅ Utility classes that should always win (rare)
+✅ Bug fixes where refactoring is too risky
+
+### When To Avoid
+
+❌ As a shortcut to avoid understanding specificity
+❌ In reusable component libraries
+❌ When you control all the CSS
+❌ As the first solution you try
+
+## Debugging Important Utilities
+
+When debugging important utilities in DevTools:
+
+```css
+/* In Chrome DevTools, important declarations are marked */
+.\!text-blue-500 {
+  color: #3b82f6 !important; /* Shows "!important" badge */
+}
+```
+
+### Finding Important Conflicts
+
+```html
+<!-- Both are important - last one in source order wins -->
+<div class="!text-red-500 !text-blue-500">
+  Blue text (appears later in stylesheet)
+</div>
+```
+
+<Note>
+When multiple `!important` declarations conflict, normal CSS cascade rules apply - the last declaration in source order wins.
+</Note>
+
+## Performance Considerations
+
+The important modifier has minimal performance impact:
+
+- Selector specificity calculations are the same
+- No additional CSS is generated (just the `!important` flag)
+- Browser rendering performance is identical
+
+## Migration Guide
+
+### From Tailwind v3
+
+The `!` modifier syntax is the same in v4:
+
+```html
+<!-- v3 and v4 - same syntax -->
+<div class="!text-blue-500">Important</div>
+
+<!-- v3 alternative (still works in v4) -->
+<div class="text-blue-500 important">Important</div>
+```
+
+### From Inline Styles
+
+Converting inline styles with important:
+
+```html
+<!-- Before: inline style -->
+<div style="color: blue !important">
+
+<!-- After: utility with important -->
+<div class="!text-blue-500">
+```
+
+## Examples
+
+### Modal Overlay
+
+```html
+<!-- Ensure overlay is always on top -->
+<div class="fixed inset-0 !z-[9999] bg-black/50">
+  <div class="modal-content">
+    <!-- Content -->
+  </div>
+</div>
+```
+
+### Loading State Override
+
+```html
+<button 
+  class="bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300"
+  data-loading="true"
+  class="data-[loading]:!bg-blue-500 data-[loading]:!opacity-50"
+>
+  Submit
+</button>
+```
+
+### Print Styles
+
+```html
+<div class="text-sm print:!text-base">
+  Normal size on screen, important base size when printing
+</div>
+```
+
+## Source Code
+
+The important modifier is handled in the candidate parsing and compilation system. The `!` character is detected and stripped from the candidate name, then `!important` is added to all declarations in the generated CSS.
+
+Key files:
+- Candidate parsing: `/packages/tailwindcss/src/candidate.ts`
+- CSS generation: `/packages/tailwindcss/src/compile.ts`

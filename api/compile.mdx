@@ -1,0 +1,372 @@
+---
+title: 'compile() and compileAst()'
+description: 'Core compilation functions for processing Tailwind CSS'
+---
+
+## compile()
+
+Compile a CSS string containing Tailwind directives into optimized CSS output.
+
+```typescript
+function compile(
+  css: string,
+  opts?: CompileOptions
+): Promise<{
+  sources: { base: string; pattern: string; negated: boolean }[]
+  root: Root
+  features: Features
+  build(candidates: string[]): string
+  buildSourceMap(): DecodedSourceMap
+}>
+```
+
+### Parameters
+
+<ParamField path="css" type="string" required>
+  The input CSS string containing Tailwind directives like `@tailwind utilities`, `@theme`, `@variant`, etc.
+</ParamField>
+
+<ParamField path="opts" type="CompileOptions">
+  Optional compilation options
+  
+  <Expandable title="CompileOptions properties">
+    <ParamField path="base" type="string">
+      Base directory for resolving file paths. Defaults to empty string.
+    </ParamField>
+    
+    <ParamField path="from" type="string">
+      Source file path for source map generation.
+    </ParamField>
+    
+    <ParamField path="polyfills" type="Polyfills">
+      Control which CSS polyfills to emit. Can be:
+      - `Polyfills.None` - No polyfills (default)
+      - `Polyfills.AtProperty` - Emit `@property` fallbacks
+      - `Polyfills.ColorMix` - Emit `color-mix()` fallbacks
+      - `Polyfills.All` - All polyfills enabled
+    </ParamField>
+    
+    <ParamField path="loadModule" type="function">
+      Function to load external modules (plugins and configs).
+      
+      ```typescript
+      (id: string, base: string, resourceHint: 'plugin' | 'config') => Promise<{
+        path: string
+        base: string
+        module: Plugin | Config
+      }>
+      ```
+    </ParamField>
+    
+    <ParamField path="loadStylesheet" type="function">
+      Function to load external stylesheets for `@import` statements.
+      
+      ```typescript
+      (id: string, base: string) => Promise<{
+        path: string
+        base: string
+        content: string
+      }>
+      ```
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+### Return Value
+
+<ResponseField name="sources" type="array">
+  Array of source patterns discovered from `@source` directives.
+  
+  ```typescript
+  { base: string; pattern: string; negated: boolean }[]
+  ```
+</ResponseField>
+
+<ResponseField name="root" type="Root">
+  Root configuration extracted from `source()` parameters in `@tailwind utilities`.
+  
+  Can be:
+  - `null` - No root specified
+  - `'none'` - Explicitly disabled via `source(none)`
+  - `{ base: string; pattern: string }` - Explicit pattern
+</ResponseField>
+
+<ResponseField name="features" type="Features">
+  Bitmask of features detected in the CSS:
+  - `Features.AtApply` - `@apply` was used
+  - `Features.AtImport` - `@import` was used
+  - `Features.JsPluginCompat` - `@plugin` or `@config` was used
+  - `Features.ThemeFunction` - `theme()` function was used
+  - `Features.Utilities` - `@tailwind utilities` was used
+  - `Features.Variants` - `@variant` was used
+  - `Features.AtTheme` - `@theme` was used
+</ResponseField>
+
+<ResponseField name="build" type="function">
+  Function to generate CSS for a given set of candidates.
+  
+  ```typescript
+  (candidates: string[]): string
+  ```
+  
+  Returns the compiled CSS string. Automatically caches results - if the same candidates are provided, returns the cached output without recompilation.
+</ResponseField>
+
+<ResponseField name="buildSourceMap" type="function">
+  Function to generate a source map for the compiled CSS.
+  
+  ```typescript
+  (): DecodedSourceMap
+  ```
+</ResponseField>
+
+### Example Usage
+
+<CodeGroup>
+```typescript Basic Usage
+import { compile } from 'tailwindcss'
+
+const css = `
+  @theme {
+    --color-primary: #3b82f6;
+    --color-secondary: #8b5cf6;
+  }
+  
+  @tailwind utilities;
+`
+
+const compiler = await compile(css)
+
+// Generate CSS for specific classes
+const output = compiler.build([
+  'text-primary',
+  'bg-secondary',
+  'hover:text-white'
+])
+
+console.log(output)
+```
+
+```typescript With Source Maps
+import { compile } from 'tailwindcss'
+
+const compiler = await compile(css, {
+  from: 'input.css'
+})
+
+const output = compiler.build(['flex', 'justify-center'])
+const sourceMap = compiler.buildSourceMap()
+
+console.log('CSS:', output)
+console.log('Source Map:', sourceMap)
+```
+
+```typescript With Custom Loaders
+import { compile, type CompileOptions } from 'tailwindcss'
+import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
+
+const options: CompileOptions = {
+  base: process.cwd(),
+  
+  async loadModule(id, base, resourceHint) {
+    const path = resolve(base, id)
+    const module = await import(path)
+    
+    return {
+      path,
+      base: dirname(path),
+      module: module.default
+    }
+  },
+  
+  async loadStylesheet(id, base) {
+    const path = resolve(base, id)
+    const content = await readFile(path, 'utf-8')
+    
+    return {
+      path,
+      base: dirname(path),
+      content
+    }
+  }
+}
+
+const compiler = await compile(css, options)
+```
+
+```typescript Incremental Builds
+import { compile } from 'tailwindcss'
+
+const compiler = await compile(css)
+
+// First build
+const output1 = compiler.build(['flex', 'grid'])
+
+// Subsequent builds are cached if candidates haven't changed
+const output2 = compiler.build(['flex', 'grid']) // Returns cached result
+
+// New candidates trigger recompilation
+const output3 = compiler.build(['flex', 'grid', 'justify-center'])
+```
+</CodeGroup>
+
+---
+
+## compileAst()
+
+Compile a pre-parsed AST instead of a CSS string. This is useful when you already have an AST from the CSS parser.
+
+```typescript
+function compileAst(
+  input: AstNode[],
+  opts?: CompileOptions
+): Promise<{
+  sources: { base: string; pattern: string; negated: boolean }[]
+  root: Root
+  features: Features
+  build(candidates: string[]): AstNode[]
+}>
+```
+
+### Parameters
+
+<ParamField path="input" type="AstNode[]" required>
+  Array of AST nodes from the CSS parser.
+</ParamField>
+
+<ParamField path="opts" type="CompileOptions">
+  Same options as `compile()` function. See above for details.
+</ParamField>
+
+### Return Value
+
+Returns the same structure as `compile()`, except the `build()` function returns `AstNode[]` instead of a string, and there is no `buildSourceMap()` function.
+
+<ResponseField name="build" type="function">
+  Function to generate an AST for a given set of candidates.
+  
+  ```typescript
+  (candidates: string[]): AstNode[]
+  ```
+  
+  Returns an array of AST nodes that can be further processed or converted to CSS using `toCss()`.
+</ResponseField>
+
+### Example Usage
+
+<CodeGroup>
+```typescript Basic AST Compilation
+import { compileAst } from 'tailwindcss'
+import * as CSS from 'tailwindcss/css-parser'
+import { toCss } from 'tailwindcss/ast'
+
+const css = `
+  @theme {
+    --color-brand: #ff6b6b;
+  }
+  @tailwind utilities;
+`
+
+// Parse CSS to AST
+const ast = CSS.parse(css)
+
+// Compile the AST
+const compiler = await compileAst(ast)
+
+// Generate AST nodes for candidates
+const outputAst = compiler.build(['text-brand', 'flex'])
+
+// Convert back to CSS if needed
+const outputCss = toCss(outputAst)
+```
+
+```typescript AST Manipulation
+import { compileAst } from 'tailwindcss'
+import * as CSS from 'tailwindcss/css-parser'
+import { walk, WalkAction } from 'tailwindcss/walk'
+
+const ast = CSS.parse(cssInput)
+const compiler = await compileAst(ast)
+
+const outputAst = compiler.build(['hover:bg-blue-500'])
+
+// Walk and modify the AST before converting to CSS
+walk(outputAst, (node) => {
+  if (node.kind === 'declaration') {
+    // Add !important to all declarations
+    node.important = true
+  }
+  return WalkAction.Continue
+})
+```
+</CodeGroup>
+
+---
+
+## Types
+
+### CompileOptions
+
+```typescript
+type CompileOptions = {
+  base?: string
+  from?: string
+  polyfills?: Polyfills
+  loadModule?: (
+    id: string,
+    base: string,
+    resourceHint: 'plugin' | 'config',
+  ) => Promise<{
+    path: string
+    base: string
+    module: Plugin | Config
+  }>
+  loadStylesheet?: (
+    id: string,
+    base: string,
+  ) => Promise<{
+    path: string
+    base: string
+    content: string
+  }>
+}
+```
+
+### Polyfills Enum
+
+```typescript
+enum Polyfills {
+  None = 0,
+  AtProperty = 1 << 0,  // Fallbacks for @property rules
+  ColorMix = 1 << 1,     // color-mix() fallbacks
+  All = AtProperty | ColorMix
+}
+```
+
+### Features Enum
+
+```typescript
+enum Features {
+  None = 0,
+  AtApply = 1 << 0,        // @apply was used
+  AtImport = 1 << 1,       // @import was used
+  JsPluginCompat = 1 << 2, // @plugin or @config was used
+  ThemeFunction = 1 << 3,  // theme() was used
+  Utilities = 1 << 4,      // @tailwind utilities was used
+  Variants = 1 << 5,       // @variant was used
+  AtTheme = 1 << 6         // @theme was used
+}
+```
+
+### DecodedSourceMap
+
+```typescript
+interface DecodedSourceMap {
+  version: number
+  sources: string[]
+  names: string[]
+  mappings: string
+  sourcesContent?: (string | null)[]
+}
+```

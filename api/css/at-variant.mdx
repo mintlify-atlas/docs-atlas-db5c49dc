@@ -1,0 +1,424 @@
+---
+title: '@variant & @custom-variant'
+description: Create custom variants to apply styles conditionally
+---
+
+Tailwind CSS provides two directives for creating custom variants: `@variant` for applying existing variants within custom utilities and nested CSS, and `@custom-variant` for defining entirely new variant modifiers.
+
+## @variant Directive
+
+The `@variant` directive applies an existing variant to a block of CSS, creating the appropriate selector transformations.
+
+### Syntax
+
+```css
+@variant variant-name {
+  /* CSS that will be wrapped with the variant */
+}
+```
+
+### Basic Usage
+
+Use `@variant` to apply conditional styling within custom utilities:
+
+```css
+@utility btn {
+  padding: 0.5rem 1rem;
+  background: blue;
+
+  @variant hover {
+    background: darkblue;
+  }
+
+  @variant focus {
+    outline: 2px solid blue;
+  }
+}
+```
+
+This generates:
+
+```css
+.btn {
+  padding: 0.5rem 1rem;
+  background: blue;
+}
+
+.btn:hover {
+  background: darkblue;
+}
+
+.btn:focus {
+  outline: 2px solid blue;
+}
+```
+
+### Using with @custom-variant
+
+You can use `@variant` with custom variants defined via `@custom-variant`:
+
+```css
+@custom-variant hocus (&:hover, &:focus);
+
+@utility interactive {
+  color: blue;
+
+  @variant hocus {
+    color: darkblue;
+    text-decoration: underline;
+  }
+}
+```
+
+### Nested @variant
+
+`@variant` can be used within custom utilities or `@custom-variant` bodies:
+
+```css
+@custom-variant complex {
+  &:hover {
+    @variant focus {
+      @slot;
+    }
+  }
+}
+```
+
+## @custom-variant Directive
+
+The `@custom-variant` directive defines new variant modifiers that can be used throughout your CSS.
+
+### Syntax
+
+<CodeGroup>
+```css Body-less Syntax
+@custom-variant name (selector1, selector2);
+```
+
+```css Body Syntax
+@custom-variant name {
+  /* CSS with @slot */
+  @slot;
+}
+```
+</CodeGroup>
+
+## Creating Custom Variants
+
+### Body-less Selector Variant
+
+Define simple variants with comma-separated selectors:
+
+```css
+@custom-variant hocus (&:hover, &:focus);
+```
+
+Use it with utilities:
+
+```html
+<div class="hocus:underline">Underlined on hover or focus</div>
+```
+
+Generated CSS:
+
+```css
+.hocus\:underline:hover,
+.hocus\:underline:focus {
+  text-decoration-line: underline;
+}
+```
+
+### Multiple Selectors
+
+Combine different selector types:
+
+```css
+@custom-variant interactive (&:hover, &:focus, &:active);
+```
+
+### At-Rule Variants
+
+Create variants with media queries or other at-rules:
+
+```css
+@custom-variant any-hover (@media (any-hover: hover));
+```
+
+```html
+<div class="any-hover:hover:underline">Only underlined on hover-capable devices</div>
+```
+
+Generated CSS:
+
+```css
+@media (any-hover: hover) {
+  @media (hover: hover) {
+    .any-hover\:hover\:underline:hover {
+      text-decoration-line: underline;
+    }
+  }
+}
+```
+
+### Body Syntax with @slot
+
+For more complex variants, use the body syntax with `@slot` as a placeholder:
+
+```css
+@custom-variant hocus {
+  &:hover {
+    @slot;
+  }
+
+  &:focus {
+    @slot;
+  }
+}
+```
+
+The `@slot` directive marks where the utility CSS should be inserted.
+
+### Nested Structure
+
+Create complex selector structures:
+
+```css
+@custom-variant card-hover {
+  &:hover {
+    & > .card-content {
+      @slot;
+    }
+  }
+}
+```
+
+```html
+<div class="card-hover:opacity-100">
+  <div class="card-content">Fades in on card hover</div>
+</div>
+```
+
+## Variant Naming Rules
+
+<ParamField path="Valid Characters" type="string">
+  Variant names must:
+  - Start with a lowercase letter or number
+  - Contain only alphanumeric characters, hyphens, or underscores
+  - Not end with a hyphen or underscore
+  - Match the pattern: `/^@?[a-z0-9][a-zA-Z0-9_-]*(?<![_-])$/`
+
+  ```css
+  ✅ @custom-variant hocus (&:hover);
+  ✅ @custom-variant my-variant (&:hover);
+  ✅ @custom-variant variant_1 (&:hover);
+  ❌ @custom-variant -invalid (&:hover);    /* starts with hyphen */
+  ❌ @custom-variant _invalid (&:hover);    /* starts with underscore */
+  ❌ @custom-variant Invalid (&:hover);     /* starts uppercase */
+  ❌ @custom-variant variant- (&:hover);    /* ends with hyphen */
+  ```
+</ParamField>
+
+## Compound Variants
+
+Use custom variants with compound modifiers like `group` and `peer`:
+
+```css
+@custom-variant hocus (&:hover, &:focus);
+```
+
+```html
+<div class="group">
+  <div class="group-hocus:flex">Shows on group hover or focus</div>
+</div>
+```
+
+## Variant Dependencies
+
+Custom variants can use other custom variants:
+
+```css
+@custom-variant interaction {
+  @variant hocus {
+    @slot;
+  }
+}
+
+@custom-variant hocus (&:hover, &:focus);
+```
+
+<Warning>
+  Circular dependencies between variants will cause an error.
+</Warning>
+
+```css
+/* ❌ This will error */
+@custom-variant a {
+  @variant b {
+    @slot;
+  }
+}
+
+@custom-variant b {
+  @variant a {
+    @slot;
+  }
+}
+```
+
+Error message:
+```
+Circular dependency detected in custom variants:
+@custom-variant a { @variant b { … } }
+@custom-variant b { @variant a { … } } /* ← */
+```
+
+## Restrictions
+
+### Top-level Only
+
+<Warning>
+  `@custom-variant` must be defined at the top level and cannot be nested.
+</Warning>
+
+```css
+/* ❌ Invalid */
+.container {
+  @custom-variant nested (&:hover);
+}
+
+/* ✅ Valid */
+@custom-variant top-level (&:hover);
+```
+
+### Selector or Body Required
+
+<Warning>
+  Body-less variants must have a selector. Variants with a body must have `@slot`.
+</Warning>
+
+```css
+/* ❌ Invalid - no selector or body */
+@custom-variant empty;
+
+/* ❌ Invalid - empty body */
+@custom-variant empty-body {
+}
+
+/* ✅ Valid - has selector */
+@custom-variant valid (&:hover);
+
+/* ✅ Valid - has body with @slot */
+@custom-variant valid-body {
+  &:hover {
+    @slot;
+  }
+}
+```
+
+### Cannot Mix Selector and Body
+
+<Warning>
+  You cannot use both a selector parameter and a body.
+</Warning>
+
+```css
+/* ❌ Invalid - has both */
+@custom-variant invalid (&:hover) {
+  @slot;
+}
+
+/* ✅ Valid - selector only */
+@custom-variant valid (&:hover);
+
+/* ✅ Valid - body only */
+@custom-variant valid {
+  &:hover {
+    @slot;
+  }
+}
+```
+
+### Valid Selectors
+
+<Warning>
+  Selector lists cannot be empty or contain empty selectors.
+</Warning>
+
+```css
+/* ❌ Invalid - empty selector list */
+@custom-variant invalid ();
+
+/* ❌ Invalid - has empty selector */
+@custom-variant invalid (.foo, , .bar);
+
+/* ✅ Valid */
+@custom-variant valid (.foo, .bar);
+```
+
+## Compound Capabilities
+
+Custom variants can specify what types of selectors they work with:
+
+- **StyleRules**: Works with CSS selectors (`:hover`, `.class`, etc.)
+- **AtRules**: Works with at-rules (`@media`, `@supports`, etc.)
+- **Never**: Cannot be used in compound variants
+
+From the source code (variants.ts:319-346):
+
+```typescript
+export function compoundsForSelectors(selectors: string[]) {
+  let compounds = Compounds.Never
+
+  for (let sel of selectors) {
+    if (sel[0] === '@') {
+      // Non-conditional at-rules can't compound
+      if (!sel.startsWith('@media') &&
+          !sel.startsWith('@supports') &&
+          !sel.startsWith('@container')) {
+        return Compounds.Never
+      }
+      compounds |= Compounds.AtRules
+      continue
+    }
+
+    // Pseudo-elements can't compound
+    if (sel.includes('::')) {
+      return Compounds.Never
+    }
+
+    compounds |= Compounds.StyleRules
+  }
+
+  return compounds
+}
+```
+
+## Output
+
+The `@custom-variant` directive is removed from the final CSS. Only the transformed utility classes are output:
+
+```css
+/* Input */
+@custom-variant hocus (&:hover, &:focus);
+
+@tailwind utilities;
+```
+
+```html
+<!-- Usage -->
+<div class="hocus:underline"></div>
+```
+
+```css
+/* Output */
+.hocus\:underline:hover,
+.hocus\:underline:focus {
+  text-decoration-line: underline;
+}
+```
+
+## Related
+
+- [@utility](/api/css/at-utility) - Create custom utilities
+- [@theme](/api/css/at-theme) - Define theme variables
+- [Hover, Focus & Other States](/docs/hover-focus-and-other-states) - Built-in variants

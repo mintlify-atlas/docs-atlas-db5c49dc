@@ -1,0 +1,572 @@
+---
+title: Migrating from v3 to v4
+description: Comprehensive guide for migrating from Tailwind CSS v3 to v4, including all breaking changes and migration patterns
+---
+
+Tailwind CSS v4 includes major architectural changes and several breaking changes. This guide covers everything that's changed and how to update your code.
+
+## Quick start
+
+The fastest way to migrate is using the automated upgrade tool:
+
+```bash
+npx @tailwindcss/upgrade
+```
+
+This will automatically handle most of the changes listed below. For manual migration or to understand what's changing, read on.
+
+## Configuration changes
+
+### CSS-first configuration
+
+The biggest change in v4 is moving from JavaScript configuration to CSS-based configuration using `@theme`.
+
+**Before (v3):**
+
+```js
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        brand: '#3b82f6',
+      },
+      spacing: {
+        '128': '32rem',
+      },
+    },
+  },
+}
+```
+
+**After (v4):**
+
+```css
+@import "tailwindcss";
+
+@theme {
+  --color-brand: #3b82f6;
+  --spacing-128: 32rem;
+}
+```
+
+### Import syntax
+
+Replace Tailwind directives with a single import:
+
+**Before (v3):**
+
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+**After (v4):**
+
+```css
+@import "tailwindcss";
+```
+
+### Content configuration
+
+Content detection is now automatic. No configuration needed!
+
+**Before (v3):**
+
+```js
+module.exports = {
+  content: [
+    './src/**/*.{js,jsx,ts,tsx}',
+  ],
+}
+```
+
+**After (v4):**
+
+No configuration required. Tailwind automatically scans your project. For custom paths:
+
+```css
+@import "tailwindcss";
+@source "./custom/path/**/*.js";
+```
+
+## Utility class changes
+
+### Shadow utilities renamed
+
+<Warning>
+Shadow utilities have been renamed to provide better granularity.
+</Warning>
+
+| v3 Class | v4 Class | Migration |
+|----------|----------|----------|
+| `shadow-xs` | `shadow-2xs` | Renamed for consistency |
+| `shadow-sm` | `shadow-xs` | Shifted down |
+| `shadow` | `shadow-sm` | Now explicit |
+| `shadow-inner` | `inset-shadow-sm` | Deprecated, use inset-shadow |
+
+**Inset shadows:**
+
+| v3 Class | v4 Class |
+|----------|----------|
+| `inset-shadow-xs` | `inset-shadow-2xs` |
+| `inset-shadow-sm` | `inset-shadow-xs` |
+| `inset-shadow` | `inset-shadow-sm` |
+
+**Drop shadows:**
+
+| v3 Class | v4 Class |
+|----------|----------|
+| `drop-shadow-sm` | `drop-shadow-xs` |
+| `drop-shadow` | `drop-shadow-sm` |
+
+### Border radius utilities renamed
+
+| v3 Class | v4 Class |
+|----------|----------|
+| `rounded-sm` | `rounded-xs` |
+| `rounded` | `rounded-sm` |
+
+### Blur utilities renamed
+
+| v3 Class | v4 Class |
+|----------|----------|
+| `blur-sm` | `blur-xs` |
+| `blur` | `blur-sm` |
+| `backdrop-blur-sm` | `backdrop-blur-xs` |
+| `backdrop-blur` | `backdrop-blur-sm` |
+
+### Positioning utilities
+
+<Note>
+The `start-*` and `end-*` utilities are deprecated in favor of more explicit names.
+</Note>
+
+| v3 Class (Deprecated) | v4 Class |
+|----------------------|----------|
+| `start-0` | `inset-s-0` |
+| `end-0` | `inset-e-0` |
+
+### Background position utilities
+
+| v3 Class (Deprecated) | v4 Class |
+|----------------------|----------|
+| `bg-left-top` | `bg-top-left` |
+| `bg-left-bottom` | `bg-bottom-left` |
+| `bg-right-top` | `bg-top-right` |
+| `bg-right-bottom` | `bg-bottom-right` |
+
+### Object position utilities
+
+| v3 Class (Deprecated) | v4 Class |
+|----------------------|----------|
+| `object-left-top` | `object-top-left` |
+| `object-left-bottom` | `object-bottom-left` |
+| `object-right-top` | `object-top-right` |
+| `object-right-bottom` | `object-bottom-right` |
+
+### Text wrapping
+
+| v3 Class (Deprecated) | v4 Class |
+|----------------------|----------|
+| `break-words` | `wrap-break-word` |
+
+### Order utilities
+
+| v3 Class (Deprecated) | v4 Class |
+|----------------------|----------|
+| `order-none` | `order-0` |
+
+### Outline utilities
+
+| v3 Class | v4 Class | Notes |
+|----------|----------|-------|
+| `outline-none` | `outline-hidden` | For accessibility, use new `outline-none` which only removes outline visually |
+
+### Removed utilities
+
+<Warning>
+These utilities have been removed in v4:
+</Warning>
+
+- `max-w-auto` and `max-h-auto` - Generated invalid CSS
+- `min-w-none` and `min-h-none` - Invalid CSS values
+- `max-w-screen-*` - Use container queries or custom values instead
+
+## Theme variable changes
+
+### Namespace changes
+
+Theme variables now use more intuitive namespaces:
+
+| v3 Variable | v4 Variable |
+|-------------|-------------|
+| `--font-size-*` | `--text-*` |
+| `--font-family-*` | `--font-*` |
+| `--letter-spacing-*` | `--tracking-*` |
+| `--line-height-*` | `--leading-*` |
+| `--transition-timing-function-*` | `--ease-*` |
+| `--width-*` | `--container-*` |
+| `--aspect-ratio-*` | `--aspect-*` |
+
+### Spacing scale changes
+
+v4 introduces a dynamic spacing scale based on a single `--spacing` multiplier:
+
+**Before (v3):**
+
+```js
+theme: {
+  spacing: {
+    '1': '0.25rem',
+    '2': '0.5rem',
+    '3': '0.75rem',
+    // ...
+  }
+}
+```
+
+**After (v4):**
+
+```css
+@theme {
+  /* Base multiplier (default: 0.25rem) */
+  --spacing: 0.25rem;
+  
+  /* Specific overrides if needed */
+  --spacing-1: 0.25rem; /* 1 × --spacing */
+  --spacing-2: 0.5rem;  /* 2 × --spacing */
+  /* Most values are calculated automatically */
+}
+```
+
+### Font weight changes
+
+Font weights are now theme variables instead of static utilities:
+
+**Before (v3):**
+
+Static utilities: `font-thin`, `font-bold`, etc.
+
+**After (v4):**
+
+```css
+@theme {
+  --font-weight-thin: 100;
+  --font-weight-extralight: 200;
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
+}
+```
+
+## Color system changes
+
+### P3 color palette
+
+v4 includes a modernized color palette using the P3 color space for wider gamut displays.
+
+**New color palettes added:**
+
+- `mauve`
+- `olive`
+- `mist`
+- `taupe`
+
+### Color mixing
+
+v4 uses `color-mix()` for opacity modifiers with automatic fallbacks:
+
+```css
+/* v4 generates both for compatibility */
+.bg-blue-500\/50 {
+  background-color: color-mix(in oklch, var(--color-blue-500) 50%, transparent);
+  background-color: rgb(from var(--color-blue-500) r g b / 50%);
+}
+```
+
+## Variant changes
+
+### New variants
+
+<Note>
+v4 adds many new variants for modern CSS features:
+</Note>
+
+**Media query variants:**
+- `inverted-colors` - Target inverted color mode
+- `pointer-none/coarse/fine` - Pointer capabilities
+- `any-pointer-none/coarse/fine` - Any input pointer
+
+**State variants:**
+- `user-valid` and `user-invalid` - User interaction validation states
+- `details-content` - Style content within details element
+- `noscript` - Target noscript context
+
+**Layout variants:**
+- `**` - All descendants (replaces `[&_*]`)
+- `in-*` - Element in a container (replaces some `group-[]` patterns)
+
+### Variant syntax changes
+
+**Group and peer variants:**
+
+Some arbitrary group/peer variants now use `in-*`:
+
+**Before (v3):**
+
+```html
+<div class="group">
+  <div class="group-[]:flex">...</div>
+</div>
+```
+
+**After (v4):**
+
+```html
+<div class="group">
+  <div class="in-[.group]:flex">...</div>
+</div>
+```
+
+### Custom variants
+
+v3 JavaScript variant configuration moves to CSS:
+
+**Before (v3):**
+
+```js
+plugin(function({ addVariant }) {
+  addVariant('hocus', ['&:hover', '&:focus'])
+})
+```
+
+**After (v4):**
+
+```css
+@custom-variant hocus (&:hover, &:focus);
+```
+
+## Plugin system changes
+
+### Official plugins
+
+**Bundled plugins:**
+
+- `@tailwindcss/forms` - Updated for v4
+- `@tailwindcss/typography` - Updated for v4
+- `@tailwindcss/aspect-ratio` - **No longer needed**, aspect ratio is built-in
+
+**Installation:**
+
+```bash
+npm install @tailwindcss/forms @tailwindcss/typography
+```
+
+**Usage (v4):**
+
+```css
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/typography";
+```
+
+### Custom utilities
+
+v3 JavaScript utilities move to CSS:
+
+**Before (v3):**
+
+```js
+plugin(function({ addUtilities }) {
+  addUtilities({
+    '.content-auto': {
+      'content-visibility': 'auto',
+    },
+  })
+})
+```
+
+**After (v4):**
+
+```css
+@utility content-auto {
+  content-visibility: auto;
+}
+```
+
+## Build tool changes
+
+### Vite projects
+
+Use the new first-party Vite plugin:
+
+```bash
+npm install @tailwindcss/vite
+```
+
+```js
+// vite.config.js
+import tailwindcss from '@tailwindcss/vite'
+
+export default {
+  plugins: [
+    tailwindcss(),
+  ],
+}
+```
+
+### PostCSS projects
+
+Update to the new PostCSS plugin:
+
+```bash
+npm install @tailwindcss/postcss
+```
+
+```js
+// postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
+}
+```
+
+<Note>
+Autoprefixer is now built-in and no longer required as a separate plugin.
+</Note>
+
+### CLI
+
+The standalone CLI is now available:
+
+```bash
+npm install @tailwindcss/cli
+```
+
+```bash
+tailwindcss -i input.css -o output.css --watch
+```
+
+## New features to explore
+
+After migrating, take advantage of v4's new features:
+
+### Container queries
+
+Built-in container query support:
+
+```html
+<div class="@container">
+  <div class="@lg:grid-cols-2">...</div>
+</div>
+```
+
+### 3D transforms
+
+New 3D transform utilities:
+
+```html
+<div class="rotate-x-45 rotate-y-12 translate-z-4">
+  3D transformed
+</div>
+```
+
+### Starting style
+
+Create enter/exit transitions without JavaScript:
+
+```html
+<dialog class="starting:opacity-0 opacity-100 transition-opacity">
+  Fades in when opened
+</dialog>
+```
+
+### Not variant
+
+Style elements when they don't match a condition:
+
+```html
+<div class="not-hover:opacity-50">...</div>
+```
+
+### Text shadow utilities
+
+New built-in text shadow support:
+
+```html
+<h1 class="text-shadow-lg text-shadow-black/50">
+  Text with shadow
+</h1>
+```
+
+### Mask utilities
+
+CSS mask utilities:
+
+```html
+<div class="mask-linear-gradient">
+  Masked content
+</div>
+```
+
+## Migration checklist
+
+Use this checklist to ensure a complete migration:
+
+<Steps>
+
+### Update dependencies
+
+- [ ] Install Tailwind CSS v4 and related packages
+- [ ] Update build tool plugins (@tailwindcss/vite or @tailwindcss/postcss)
+- [ ] Remove autoprefixer if using
+
+### Update CSS files
+
+- [ ] Replace `@tailwind` directives with `@import "tailwindcss"`
+- [ ] Convert `tailwind.config.js` to `@theme` blocks
+- [ ] Update custom `@layer utilities` to `@utility`
+- [ ] Add `@source` directives if needed
+
+### Update utility classes
+
+- [ ] Rename shadow utilities (shadow → shadow-sm, etc.)
+- [ ] Update border radius utilities (rounded → rounded-sm)
+- [ ] Update blur utilities (blur → blur-sm)
+- [ ] Replace deprecated positioning utilities (start-* → inset-s-*)
+- [ ] Update background/object position utilities
+- [ ] Replace `break-words` with `wrap-break-word`
+- [ ] Replace `outline-none` with `outline-hidden` where appropriate
+
+### Update configuration
+
+- [ ] Migrate theme customizations to CSS variables
+- [ ] Convert custom variants to `@custom-variant`
+- [ ] Update plugin imports to use `@plugin`
+- [ ] Remove `content` configuration (now automatic)
+
+### Test and verify
+
+- [ ] Run build successfully
+- [ ] Visual regression testing
+- [ ] Test dark mode if used
+- [ ] Verify custom plugins work
+- [ ] Check third-party integrations
+
+</Steps>
+
+## Getting help
+
+If you encounter migration issues:
+
+- Review the [Upgrade Guide](/upgrading/upgrade-guide) for general guidance
+- Check the [Codemods documentation](/upgrading/codemods) for tool usage
+- Visit [GitHub Discussions](https://github.com/tailwindlabs/tailwindcss/discussions)
+- Read the full [CHANGELOG](https://github.com/tailwindlabs/tailwindcss/blob/main/CHANGELOG.md)

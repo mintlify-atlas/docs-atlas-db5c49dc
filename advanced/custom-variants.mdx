@@ -1,0 +1,388 @@
+---
+title: Custom Variants
+description: Create custom variants with @custom-variant and @variant directives
+---
+
+## Overview
+
+Tailwind CSS provides two ways to create custom variants: `@custom-variant` for defining new variants and `@variant` for applying existing variants within custom utilities or other contexts.
+
+## @custom-variant Directive
+
+The `@custom-variant` directive allows you to create entirely new variants that can be used throughout your project.
+
+### Body-less Syntax
+
+The simplest way to define a variant is using the body-less syntax with a selector list.
+
+#### Selector Variants
+
+```css
+@custom-variant hocus (&:hover, &:focus);
+```
+
+```html
+<button class="hocus:bg-blue-500">
+  Blue on hover or focus
+</button>
+```
+
+This creates a `hocus:` variant that applies styles when the element is hovered or focused.
+
+<Note>
+The `&` symbol represents the element the utility is applied to. Multiple selectors are comma-separated.
+</Note>
+
+#### At-Rule Variants
+
+```css
+@custom-variant any-hover (@media (any-hover: hover));
+```
+
+```html
+<div class="any-hover:hover:underline">
+  Only underlined if device supports hover
+</div>
+```
+
+#### Mixed Selectors and At-Rules
+
+You can combine both selector and at-rule conditions:
+
+```css
+@custom-variant cant-hover (
+  &:not(:hover),
+  &:not(:active),
+  @media not (any-hover: hover),
+  @media not (pointer: fine)
+);
+```
+
+```html
+<button class="cant-hover:focus:underline">
+  Underlined on focus (for devices without hover)
+</button>
+```
+
+### Body with @slot Syntax
+
+For more complex variants, use the body syntax with `@slot` to mark where utilities should be inserted.
+
+#### Basic @slot Usage
+
+```css
+@custom-variant selected {
+  &[data-selected] {
+    @slot;
+  }
+}
+```
+
+```html
+<div class="selected:bg-blue-500" data-selected>
+  Selected state styling
+</div>
+```
+
+#### Nested Structures
+
+```css
+@custom-variant custom-before {
+  &::before {
+    content: "";
+    @slot;
+  }
+}
+```
+
+```html
+<div class="custom-before:bg-red-500">
+  Pseudo-element will have red background
+</div>
+```
+
+### Using @variant Inside Definitions
+
+You can compose variants by using `@variant` within `@custom-variant` bodies:
+
+```css
+@custom-variant hocus {
+  @variant hover {
+    @variant focus {
+      @slot;
+    }
+  }
+}
+```
+
+This creates a variant that applies on both hover AND focus (different from the comma-separated version which is OR).
+
+<Warning>
+Be careful not to create circular dependencies when composing variants. The following would cause an error:
+
+```css
+@custom-variant foo {
+  @variant bar { @slot; }
+}
+
+@custom-variant bar {
+  @variant foo { @slot; }
+}
+```
+</Warning>
+
+## @variant Directive
+
+The `@variant` directive applies an existing variant within custom utility or variant definitions.
+
+### In Custom Utilities
+
+Apply variants directly in utility definitions:
+
+```css
+@utility fancy-text {
+  color: blue;
+  
+  @variant dark {
+    color: lightblue;
+  }
+}
+```
+
+```html
+<p class="fancy-text">Blue text</p>
+<p class="fancy-text" data-theme="dark">Light blue in dark mode</p>
+```
+
+### Composing Multiple Variants
+
+Nest `@variant` directives to combine conditions:
+
+```css
+@utility responsive-button {
+  padding: 0.5rem;
+  
+  @variant md {
+    padding: 1rem;
+    
+    @variant hover {
+      padding: 1.25rem;
+    }
+  }
+}
+```
+
+## Compound Variants
+
+Tailwind includes compound variants that modify how other variants work.
+
+### group Variant
+
+The `group` compound variant is implemented in the source code:
+
+```typescript
+variants.compound('group', Compounds.StyleRules, (ruleNode, variant) => {
+  // Name the group with optional modifier
+  let variantSelector = variant.modifier
+    ? `:where(.group\/${variant.modifier.value})`
+    : `:where(.group)`
+  
+  // Apply variant to descendant when ancestor has group class
+  node.selector = `&:is(${selector} *)`
+})
+```
+
+Usage:
+```html
+<div class="group">
+  <button class="group-hover:bg-blue-500">
+    Blue on group hover
+  </button>
+</div>
+
+<div class="group/sidebar">
+  <button class="group-hover/sidebar:visible">
+    Named group
+  </button>
+</div>
+```
+
+### peer Variant
+
+Similar to `group`, but for sibling elements:
+
+```html
+<input type="checkbox" class="peer" />
+<label class="peer-checked:text-blue-500">
+  Blue when checkbox is checked
+</label>
+```
+
+### not Variant
+
+The `not` variant negates another variant:
+
+```html
+<div class="not-hover:opacity-50">
+  Faded unless hovered
+</div>
+```
+
+### in Variant
+
+Applies styles when the element is inside another element:
+
+```html
+<div class="in-hover:text-blue-500">
+  Blue when any ancestor is hovered
+</div>
+```
+
+### has Variant
+
+Applies styles when the element contains a matching child:
+
+```html
+<div class="has-hover:border-blue-500">
+  <button>Hover me to change parent border</button>
+</div>
+```
+
+## Variant Ordering
+
+Variants have a specific order that determines their precedence:
+
+```typescript
+// From variants.ts:203-270
+compare(a: Variant | null, z: Variant | null): number {
+  // Order by registration order first
+  let aOrder = this.variants.get(a.root)!.order
+  let zOrder = this.variants.get(z.root)!.order
+  
+  let orderedByVariant = aOrder - zOrder
+  if (orderedByVariant !== 0) return orderedByVariant
+  
+  // Then by value
+  // Arbitrary values come last
+  // Named values are sorted alphabetically
+}
+```
+
+<Tip>
+Variants are applied in the order they're defined in the framework, not the order they appear in your class names.
+</Tip>
+
+## Advanced Variant Features
+
+### Functional Variants
+
+Functional variants accept values:
+
+```css
+@custom-variant aria-* (&[aria-*="true"]);
+@custom-variant data-* (&[data-*]);
+@custom-variant nth-* (&:nth-child(*));
+```
+
+```html
+<button class="aria-pressed:bg-blue-500" aria-pressed="true">
+  Pressed state
+</button>
+
+<div class="data-active:font-bold" data-active>
+  Active item
+</div>
+
+<li class="nth-3:text-red-500">
+  Third item is red
+</li>
+```
+
+### Custom Dark Mode Variant
+
+Override the default dark mode implementation:
+
+```css
+@custom-variant dark (&:is([data-theme='dark'] *));
+```
+
+```html
+<div data-theme="dark">
+  <p class="dark:text-white">White text in custom dark mode</p>
+</div>
+```
+
+### Breakpoint-like Variants
+
+```css
+@custom-variant desktop (@media (min-width: 1280px));
+```
+
+```html
+<div class="desktop:grid-cols-4">
+  Four columns on desktop
+</div>
+```
+
+## Rules and Constraints
+
+<Warning>
+**Important Rules:**
+
+- `@custom-variant` must be defined at the top level (not nested)
+- Variant names must be alphanumeric, may contain dashes/underscores
+- Variant names must start with a lowercase letter or number
+- Variant names cannot end with a dash or underscore
+- Cannot have both a selector list and a body
+- Must have either a selector list or a body with `@slot`
+</Warning>
+
+### Invalid Examples
+
+```css
+/* ❌ Nested variant */
+.foo {
+  @custom-variant bar (&:hover);
+}
+
+/* ❌ No selector or body */
+@custom-variant foo;
+
+/* ❌ Both selector and body */
+@custom-variant foo (&:hover) {
+  @slot;
+}
+
+/* ❌ Empty selector */
+@custom-variant foo ();
+
+/* ❌ Invalid name */
+@custom-variant foo:bar (&:hover);
+
+/* ❌ Starting with dash */
+@custom-variant -foo (&:hover);
+
+/* ❌ Ending with dash */
+@custom-variant foo- (&:hover);
+```
+
+## Best Practices
+
+<Tip>
+**Recommendations:**
+
+1. Use descriptive names that clearly indicate when the variant applies
+2. Prefer body-less syntax for simple variants
+3. Use `@slot` syntax for complex structural variants
+4. Test variants with compound variants like `group-` and `peer-`
+5. Document complex variants with comments explaining their behavior
+6. Avoid creating variants that conflict with core variants
+</Tip>
+
+## Source Code Reference
+
+The variant system is implemented in:
+- `/packages/tailwindcss/src/variants.ts:39-317` - Variants class
+- `/packages/tailwindcss/src/variants.ts:348-1163` - createVariants function
+- `/packages/tailwindcss/src/variants.ts:86-110` - fromAst method for @custom-variant
+- `/packages/tailwindcss/src/variants.ts:1210-1235` - substituteAtVariant function

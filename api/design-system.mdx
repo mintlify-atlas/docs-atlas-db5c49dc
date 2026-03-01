@@ -1,0 +1,548 @@
+---
+title: 'DesignSystem API'
+description: 'Core design system interface for Tailwind CSS utilities and variants'
+---
+
+## Overview
+
+The `DesignSystem` object is the core interface for working with Tailwind's utilities, variants, and theme. It provides methods for parsing candidates, generating CSS, and managing the design system configuration.
+
+```typescript
+interface DesignSystem {
+  theme: Theme
+  utilities: Utilities
+  variants: Variants
+  invalidCandidates: Set<string>
+  important: boolean
+  
+  // Parsing and compilation
+  parseCandidate(candidate: string): Readonly<Candidate>[]
+  parseVariant(variant: string): Readonly<Variant> | null
+  compileAstNodes(candidate: Candidate, flags?: CompileAstFlags): AstNode[]
+  
+  // String conversion
+  printCandidate(candidate: Candidate): string
+  printVariant(variant: Variant): string
+  
+  // Ordering and sorting
+  getClassOrder(classes: string[]): [string, bigint | null][]
+  getVariantOrder(): Map<Variant, number>
+  
+  // IntelliSense support
+  getClassList(): ClassEntry[]
+  getVariants(): VariantEntry[]
+  candidatesToCss(classes: string[]): (string | null)[]
+  candidatesToAst(classes: string[]): AstNode[][]
+  
+  // Theme resolution
+  resolveThemeValue(path: string, forceInline?: boolean): string | undefined
+  trackUsedVariables(raw: string): void
+  canonicalizeCandidates(candidates: string[], options?: CanonicalizeOptions): string[]
+  
+  // General purpose storage
+  storage: Record<symbol, unknown>
+}
+```
+
+## Creating a Design System
+
+Design systems are typically created internally during compilation, but you can create one manually:
+
+```typescript
+import { buildDesignSystem } from 'tailwindcss/design-system'
+import { Theme } from 'tailwindcss/theme'
+
+const theme = new Theme()
+theme.add('--color-primary', '#3b82f6', ThemeOptions.NONE)
+theme.add('--color-secondary', '#8b5cf6', ThemeOptions.NONE)
+
+const designSystem = buildDesignSystem(theme)
+```
+
+## Properties
+
+### theme
+
+<ResponseField name="theme" type="Theme">
+  The theme instance containing all CSS custom properties and their values.
+  
+  ```typescript
+  const primaryColor = designSystem.theme.resolve(null, ['--color-primary'])
+  ```
+</ResponseField>
+
+### utilities
+
+<ResponseField name="utilities" type="Utilities">
+  The utilities registry for registering and managing utility classes.
+  
+  ```typescript
+  designSystem.utilities.static('custom-util', () => {
+    return [decl('display', 'flex')]
+  })
+  ```
+</ResponseField>
+
+### variants
+
+<ResponseField name="variants" type="Variants">
+  The variants registry for managing variant modifiers like `hover:`, `md:`, etc.
+  
+  ```typescript
+  designSystem.variants.static('custom', (r) => {
+    r.nodes = [styleRule('.custom &', r.nodes)]
+  })
+  ```
+</ResponseField>
+
+### invalidCandidates
+
+<ResponseField name="invalidCandidates" type="Set<string>">
+  Set of candidate strings that have been determined to be invalid. Used for caching validation results.
+</ResponseField>
+
+### important
+
+<ResponseField name="important" type="boolean">
+  Whether utility declarations should be marked as `!important`. Defaults to `false`.
+</ResponseField>
+
+### storage
+
+<ResponseField name="storage" type="Record<symbol, unknown>">
+  General purpose storage for plugins and extensions. Each key must be a unique symbol to avoid collisions.
+</ResponseField>
+
+## Parsing Methods
+
+### parseCandidate()
+
+Parse a candidate string into structured candidate objects.
+
+```typescript
+parseCandidate(candidate: string): Readonly<Candidate>[]
+```
+
+<ParamField path="candidate" type="string" required>
+  The candidate string to parse (e.g., `'hover:bg-blue-500'`, `'md:flex'`).
+</ParamField>
+
+**Returns:** Array of parsed candidate objects. A single string can produce multiple candidates (e.g., `'text-red-500/50'` creates candidates for both color and opacity).
+
+<CodeGroup>
+```typescript Basic Parsing
+const candidates = designSystem.parseCandidate('hover:bg-blue-500')
+
+for (const candidate of candidates) {
+  console.log({
+    variants: candidate.variants,
+    root: candidate.root,
+    modifier: candidate.modifier
+  })
+}
+```
+
+```typescript Complex Candidates
+// Parse a complex candidate with variants and modifiers
+const candidates = designSystem.parseCandidate('md:hover:bg-blue-500/50')
+
+// candidates[0].variants will contain 'md' and 'hover'
+// candidates[0].root will be 'bg-blue-500'
+// candidates[0].modifier will be { kind: 'alpha', value: '50' }
+```
+</CodeGroup>
+
+### parseVariant()
+
+Parse a variant string into a variant object.
+
+```typescript
+parseVariant(variant: string): Readonly<Variant> | null
+```
+
+<ParamField path="variant" type="string" required>
+  The variant string to parse (e.g., `'hover'`, `'md'`, `'dark'`).
+</ParamField>
+
+**Returns:** Parsed variant object or `null` if the variant is invalid.
+
+```typescript
+const variant = designSystem.parseVariant('hover')
+if (variant) {
+  console.log('Valid variant:', variant)
+}
+```
+
+### compileAstNodes()
+
+Compile a parsed candidate into AST nodes.
+
+```typescript
+compileAstNodes(
+  candidate: Candidate,
+  flags?: CompileAstFlags
+): { node: AstNode; propertySort: number }[]
+```
+
+<ParamField path="candidate" type="Candidate" required>
+  The parsed candidate object to compile.
+</ParamField>
+
+<ParamField path="flags" type="CompileAstFlags">
+  Compilation flags:
+  - `CompileAstFlags.None` - No special flags
+  - `CompileAstFlags.RespectImportant` - Apply `!important` if `designSystem.important` is true (default)
+</ParamField>
+
+**Returns:** Array of AST nodes with their property sort order.
+
+```typescript
+const candidates = designSystem.parseCandidate('flex')
+const astNodes = designSystem.compileAstNodes(candidates[0])
+
+for (const { node, propertySort } of astNodes) {
+  console.log('Node:', node, 'Sort order:', propertySort)
+}
+```
+
+## String Conversion Methods
+
+### printCandidate()
+
+Convert a parsed candidate back to its string representation.
+
+```typescript
+printCandidate(candidate: Candidate): string
+```
+
+```typescript
+const candidates = designSystem.parseCandidate('hover:bg-blue-500')
+const str = designSystem.printCandidate(candidates[0])
+console.log(str) // 'hover:bg-blue-500'
+```
+
+### printVariant()
+
+Convert a parsed variant back to its string representation.
+
+```typescript
+printVariant(variant: Variant): string
+```
+
+```typescript
+const variant = designSystem.parseVariant('hover')
+if (variant) {
+  const str = designSystem.printVariant(variant)
+  console.log(str) // 'hover'
+}
+```
+
+## Ordering Methods
+
+### getClassOrder()
+
+Get the sort order for an array of class names.
+
+```typescript
+getClassOrder(classes: string[]): [string, bigint | null][]
+```
+
+<ParamField path="classes" type="string[]" required>
+  Array of class names to get sort order for.
+</ParamField>
+
+**Returns:** Array of tuples containing the class name and its sort order (or `null` if invalid).
+
+```typescript
+const order = designSystem.getClassOrder([
+  'hover:bg-blue-500',
+  'flex',
+  'md:grid'
+])
+
+// Sort classes by their order
+const sorted = order
+  .sort((a, z) => {
+    if (a[1] === null) return 1
+    if (z[1] === null) return -1
+    return a[1] < z[1] ? -1 : 1
+  })
+  .map(([name]) => name)
+
+console.log(sorted)
+```
+
+### getVariantOrder()
+
+Get a map of variants to their sort order.
+
+```typescript
+getVariantOrder(): Map<Variant, number>
+```
+
+**Returns:** Map where keys are variant objects and values are their numeric sort order.
+
+```typescript
+const variantOrder = designSystem.getVariantOrder()
+
+const hoverVariant = designSystem.parseVariant('hover')
+if (hoverVariant) {
+  const order = variantOrder.get(hoverVariant)
+  console.log('Hover variant order:', order)
+}
+```
+
+## IntelliSense Methods
+
+### getClassList()
+
+Get a list of all available utility classes for IntelliSense.
+
+```typescript
+getClassList(): ClassEntry[]
+```
+
+**Returns:** Array of class entries containing metadata about each utility.
+
+```typescript
+const classList = designSystem.getClassList()
+
+for (const entry of classList) {
+  console.log({
+    name: entry.name,
+    kind: entry.kind,
+    // ... other metadata
+  })
+}
+```
+
+### getVariants()
+
+Get a list of all available variants for IntelliSense.
+
+```typescript
+getVariants(): VariantEntry[]
+```
+
+**Returns:** Array of variant entries.
+
+```typescript
+const variants = designSystem.getVariants()
+
+for (const variant of variants) {
+  console.log('Available variant:', variant)
+}
+```
+
+### candidatesToCss()
+
+Convert an array of candidates to their CSS output.
+
+```typescript
+candidatesToCss(classes: string[]): (string | null)[]
+```
+
+<ParamField path="classes" type="string[]" required>
+  Array of class names to convert to CSS.
+</ParamField>
+
+**Returns:** Array of CSS strings (or `null` for invalid classes) corresponding to each input class.
+
+<CodeGroup>
+```typescript Convert to CSS
+const cssOutput = designSystem.candidatesToCss([
+  'flex',
+  'bg-blue-500',
+  'invalid-class'
+])
+
+// cssOutput[0]: '.flex { display: flex; }'
+// cssOutput[1]: '.bg-blue-500 { background-color: ... }'
+// cssOutput[2]: null (invalid)
+```
+
+```typescript IntelliSense Preview
+// Use in editor extensions to show CSS preview
+function showCssPreview(className: string) {
+  const [css] = designSystem.candidatesToCss([className])
+  
+  if (css) {
+    showTooltip(css)
+  } else {
+    showError('Invalid class name')
+  }
+}
+```
+</CodeGroup>
+
+### candidatesToAst()
+
+Convert an array of candidates to AST nodes.
+
+```typescript
+candidatesToAst(classes: string[]): AstNode[][]
+```
+
+<ParamField path="classes" type="string[]" required>
+  Array of class names to convert to AST.
+</ParamField>
+
+**Returns:** Array of AST node arrays (empty array for invalid classes).
+
+```typescript
+const astArrays = designSystem.candidatesToAst(['flex', 'grid'])
+
+for (const nodes of astArrays) {
+  for (const node of nodes) {
+    console.log('AST Node:', node)
+  }
+}
+```
+
+## Theme Methods
+
+### resolveThemeValue()
+
+Resolve a theme path to its CSS value.
+
+```typescript
+resolveThemeValue(path: string, forceInline?: boolean): string | undefined
+```
+
+<ParamField path="path" type="string" required>
+  Theme path to resolve (e.g., `'--color-blue-500'`, `'--spacing-4'`).
+  
+  Can include an opacity modifier using `/` syntax: `'--color-blue-500 / 50%'`
+</ParamField>
+
+<ParamField path="forceInline" type="boolean">
+  If `true`, forces the value to be inlined rather than using a CSS variable reference. Defaults to `true`.
+</ParamField>
+
+**Returns:** The resolved CSS value or `undefined` if the path doesn't exist.
+
+<CodeGroup>
+```typescript Basic Resolution
+const color = designSystem.resolveThemeValue('--color-blue-500')
+console.log(color) // '#3b82f6'
+
+const spacing = designSystem.resolveThemeValue('--spacing-4')
+console.log(spacing) // '1rem'
+```
+
+```typescript With Opacity Modifier
+const colorWithAlpha = designSystem.resolveThemeValue('--color-blue-500 / 50%')
+console.log(colorWithAlpha) // 'color-mix(in srgb, #3b82f6 50%, transparent)'
+```
+
+```typescript Variable Reference
+const varRef = designSystem.resolveThemeValue('--color-primary', false)
+console.log(varRef) // 'var(--color-primary)'
+```
+</CodeGroup>
+
+### trackUsedVariables()
+
+Track CSS variables used in arbitrary values to ensure they're included in the output.
+
+```typescript
+trackUsedVariables(raw: string): void
+```
+
+<ParamField path="raw" type="string" required>
+  Raw string that may contain CSS variable references.
+</ParamField>
+
+```typescript
+// Track variables in arbitrary values
+designSystem.trackUsedVariables('calc(var(--spacing-4) * 2)')
+designSystem.trackUsedVariables('color-mix(in srgb, var(--color-primary), white)')
+```
+
+### canonicalizeCandidates()
+
+Canonicalize an array of candidates by parsing and re-printing them.
+
+```typescript
+canonicalizeCandidates(
+  candidates: string[],
+  options?: CanonicalizeOptions
+): string[]
+```
+
+<ParamField path="candidates" type="string[]" required>
+  Array of candidate strings to canonicalize.
+</ParamField>
+
+<ParamField path="options" type="CanonicalizeOptions">
+  Options for canonicalization.
+</ParamField>
+
+**Returns:** Array of canonicalized candidate strings.
+
+```typescript
+const canonical = designSystem.canonicalizeCandidates([
+  'hover:bg-blue-500',
+  'bg-blue-500',
+  'md:hover:bg-blue-500'
+])
+
+console.log(canonical) // Normalized, de-duplicated candidates
+```
+
+## Example: Building a Custom Tool
+
+<CodeGroup>
+```typescript Class Name Validator
+import { buildDesignSystem } from 'tailwindcss/design-system'
+import { Theme } from 'tailwindcss/theme'
+
+function validateClassNames(classes: string[]): {
+  valid: string[]
+  invalid: string[]
+} {
+  const theme = new Theme()
+  const designSystem = buildDesignSystem(theme)
+  
+  const valid: string[] = []
+  const invalid: string[] = []
+  
+  for (const className of classes) {
+    const candidates = designSystem.parseCandidate(className)
+    
+    if (candidates.length > 0) {
+      const astNodes = designSystem.compileAstNodes(candidates[0])
+      
+      if (astNodes.length > 0) {
+        valid.push(className)
+      } else {
+        invalid.push(className)
+      }
+    } else {
+      invalid.push(className)
+    }
+  }
+  
+  return { valid, invalid }
+}
+```
+
+```typescript CSS Generator
+import { buildDesignSystem } from 'tailwindcss/design-system'
+import { Theme } from 'tailwindcss/theme'
+
+function generateCss(classes: string[]): string {
+  const theme = new Theme()
+  const designSystem = buildDesignSystem(theme)
+  
+  const cssArray = designSystem.candidatesToCss(classes)
+  
+  return cssArray
+    .filter((css): css is string => css !== null)
+    .join('\n\n')
+}
+
+const css = generateCss(['flex', 'justify-center', 'items-center'])
+console.log(css)
+```
+</CodeGroup>

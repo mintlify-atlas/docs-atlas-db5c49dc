@@ -1,0 +1,535 @@
+---
+title: Adding Custom Styles
+description: Learn how to extend Tailwind with custom utilities, components, and CSS alongside the framework.
+---
+
+Tailwind is designed to be extended. Whether you need custom utilities, component classes, or arbitrary CSS, there are several ways to add your own styles alongside Tailwind's utilities.
+
+## Custom Utilities with @utility
+
+Create custom utilities that integrate seamlessly with Tailwind's utility system using the `@utility` directive:
+
+```css
+@utility card-elevated {
+  @apply rounded-lg shadow-lg bg-white;
+  transform: translateY(-2px);
+  transition: all 0.2s;
+  
+  &:hover {
+    @apply shadow-xl;
+    transform: translateY(-4px);
+  }
+}
+```
+
+Use it like any Tailwind utility:
+
+```html
+<div class="card-elevated p-6">
+  Custom utility with hover effect
+</div>
+```
+
+### Utilities with Variants
+
+Custom utilities automatically work with Tailwind's variant system:
+
+```html
+<div class="card-elevated hover:card-elevated md:card-elevated dark:card-elevated">
+  <!-- Variants work automatically -->
+</div>
+```
+
+### Complex Custom Utilities
+
+```css
+@utility prose-link {
+  @apply text-blue-600 no-underline;
+  
+  &:hover {
+    @apply text-blue-800 underline;
+  }
+  
+  &:visited {
+    @apply text-purple-600;
+  }
+}
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+```
+
+From the source code, custom utilities integrate with the entire Tailwind system:
+
+```typescript
+test('custom utilities work with @apply', async () => {
+  let result = await compileCss(css`
+    @utility foo {
+      @apply flex flex-col underline;
+    }
+    @utility bar {
+      @apply z-10;
+      &:hover {
+        @apply z-20;
+      }
+    }
+  `)
+  // Custom utilities support @apply, variants, and more
+})
+```
+
+## Extending the Theme
+
+Add custom values to Tailwind's theme using the `@theme` directive:
+
+### Custom Colors
+
+```css
+@theme {
+  --color-brand-primary: #6366f1;
+  --color-brand-secondary: #8b5cf6;
+  --color-brand-accent: #ec4899;
+  
+  /* With opacity support */
+  --color-brand-light: rgb(99 102 241 / 0.1);
+}
+```
+
+Use them with any color utility:
+
+```html
+<div class="bg-brand-primary text-white">
+  <button class="bg-brand-accent hover:bg-brand-secondary">
+    Click me
+  </button>
+</div>
+```
+
+### Custom Spacing
+
+```css
+@theme {
+  --spacing-xs: 0.125rem;  /* 2px */
+  --spacing-18: 4.5rem;    /* 72px */
+  --spacing-100: 25rem;    /* 400px */
+}
+```
+
+```html
+<div class="p-xs m-18 gap-100">
+  Custom spacing values
+</div>
+```
+
+### Custom Breakpoints
+
+```css
+@theme {
+  --breakpoint-xs: 475px;
+  --breakpoint-3xl: 1920px;
+  --breakpoint-4xl: 2560px;
+}
+```
+
+```html
+<div class="grid grid-cols-1 xs:grid-cols-2 3xl:grid-cols-4">
+  Custom responsive behavior
+</div>
+```
+
+### Custom Fonts
+
+```css
+@theme {
+  --font-display: 'Montserrat', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'Fira Code', monospace;
+}
+```
+
+```html
+<h1 class="font-display text-4xl">
+  Custom font families
+</h1>
+```
+
+### Custom Animations
+
+```css
+@theme {
+  --animate-slide-in: slide-in 0.3s ease-out;
+  --animate-fade-in: fade-in 0.5s ease-in;
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+```
+
+```html
+<div class="animate-slide-in">
+  Slides in from the left
+</div>
+```
+
+## Custom Variants
+
+Create custom variants for special use cases:
+
+```css
+@variant hocus {
+  &:hover,
+  &:focus {
+    @slot;
+  }
+}
+
+@variant third-child {
+  &:nth-child(3) {
+    @slot;
+  }
+}
+
+@variant not-last {
+  &:not(:last-child) {
+    @slot;
+  }
+}
+```
+
+Use them in your HTML:
+
+```html
+<button class="hocus:bg-blue-600 hocus:ring-2">
+  Style on hover OR focus
+</button>
+
+<div class="third-child:font-bold">
+  Bold if third child
+</div>
+
+<div class="not-last:border-b">
+  Border except on last item
+</div>
+```
+
+## Adding Arbitrary CSS
+
+For styles that don't fit the utility pattern, add regular CSS:
+
+### Plain CSS
+
+```css
+@tailwind utilities;
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded-full;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+```
+
+### Complex Components
+
+```css
+.pricing-table {
+  @apply grid gap-8;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.pricing-card {
+  @apply relative overflow-hidden rounded-lg border;
+  @apply transition-all duration-300;
+}
+
+.pricing-card:hover {
+  @apply scale-105 shadow-xl;
+}
+
+.pricing-card::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10;
+  @apply opacity-0 transition-opacity;
+}
+
+.pricing-card:hover::before {
+  @apply opacity-100;
+}
+```
+
+## Layer System
+
+Tailwind organizes styles into layers. Add your custom styles to the appropriate layer:
+
+```css
+/* Properties layer - CSS variables and @property rules */
+@layer properties {
+  :root {
+    --custom-property: value;
+  }
+}
+
+/* Theme layer - Design system values */
+@layer theme {
+  @theme {
+    --color-custom: #ff6b6b;
+  }
+}
+
+/* Utilities layer - Custom utilities */
+@layer utilities {
+  @utility custom-pattern {
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      currentColor 10px,
+      currentColor 11px
+    );
+  }
+}
+```
+
+## Plugins (Advanced)
+
+For maximum flexibility, create JavaScript plugins:
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(function({ addUtilities, addVariant, theme }) {
+      // Add utilities
+      addUtilities({
+        '.text-stroke': {
+          '-webkit-text-stroke': '1px currentColor',
+          'paint-order': 'stroke fill',
+        },
+        '.text-stroke-2': {
+          '-webkit-text-stroke': '2px currentColor',
+          'paint-order': 'stroke fill',
+        },
+      })
+
+      // Add variant
+      addVariant('not-first', '&:not(:first-child)')
+      
+      // Add responsive utilities
+      const spacing = theme('spacing')
+      const containerUtilities = Object.entries(spacing).reduce(
+        (acc, [key, value]) => ({
+          ...acc,
+          [`.container-${key}`]: {
+            maxWidth: value,
+            marginLeft: 'auto',
+            marginRight: 'auto',
+          },
+        }),
+        {}
+      )
+      addUtilities(containerUtilities)
+    })
+  ],
+}
+```
+
+## Practical Examples
+
+### Form Component System
+
+```css
+@layer utilities {
+  @utility input-base {
+    @apply w-full px-4 py-2 rounded-lg border;
+    @apply transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2;
+  }
+  
+  @utility input-error {
+    @apply input-base border-red-500 focus:ring-red-500;
+  }
+  
+  @utility input-success {
+    @apply input-base border-green-500 focus:ring-green-500;
+  }
+}
+```
+
+```html
+<input class="input-base" placeholder="Normal" />
+<input class="input-error" placeholder="Error state" />
+<input class="input-success" placeholder="Success state" />
+```
+
+### Card Pattern System
+
+```css
+@layer utilities {
+  @utility card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden;
+  }
+  
+  @utility card-hover {
+    @apply card transition-all duration-300;
+    @apply hover:shadow-xl hover:scale-[1.02];
+  }
+  
+  @utility card-bordered {
+    @apply card border border-gray-200 dark:border-gray-700;
+  }
+}
+```
+
+### Button System
+
+```css
+@theme {
+  --button-primary: #3b82f6;
+  --button-secondary: #6b7280;
+  --button-danger: #ef4444;
+}
+
+@layer utilities {
+  @utility btn {
+    @apply inline-flex items-center justify-center;
+    @apply px-4 py-2 rounded-lg font-semibold;
+    @apply transition-colors duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  @utility btn-primary {
+    @apply btn bg-button-primary text-white;
+    @apply hover:bg-blue-600 focus:ring-blue-500;
+  }
+  
+  @utility btn-secondary {
+    @apply btn bg-button-secondary text-white;
+    @apply hover:bg-gray-700 focus:ring-gray-500;
+  }
+}
+```
+
+## Best Practices
+
+### Use Semantic Names
+
+```css
+/* Good: Semantic, describes purpose */
+@utility prose-link { /* ... */ }
+@utility badge-success { /* ... */ }
+
+/* Bad: Generic, describes appearance */
+@utility blue-underline { /* ... */ }
+@utility small-rounded { /* ... */ }
+```
+
+### Leverage @apply Appropriately
+
+<Note>
+  Use `@apply` to compose existing utilities, not to recreate them.
+</Note>
+
+```css
+/* Good: Composing utilities */
+@utility card {
+  @apply bg-white rounded-lg shadow-md p-6;
+}
+
+/* Bad: Recreating utilities */
+@utility custom-flex {
+  display: flex;
+  align-items: center;
+}
+```
+
+### Keep Theme Values Consistent
+
+```css
+@theme {
+  /* Good: Consistent naming and scale */
+  --spacing-component-xs: 0.5rem;
+  --spacing-component-sm: 1rem;
+  --spacing-component-md: 1.5rem;
+  --spacing-component-lg: 2rem;
+  
+  /* Bad: Inconsistent naming */
+  --tiny-space: 0.5rem;
+  --regularSpace: 1rem;
+  --LARGE_SPACING: 1.5rem;
+}
+```
+
+### Document Custom Additions
+
+```css
+/**
+ * Custom glass morphism effect
+ * Usage: <div class="glass">...</div>
+ * Variants: hover:glass, md:glass
+ */
+@utility glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+```
+
+## Testing Custom Styles
+
+Ensure your custom utilities work with Tailwind's features:
+
+```html
+<!-- Test with variants -->
+<div class="custom-utility hover:custom-utility focus:custom-utility">
+
+<!-- Test with responsive variants -->
+<div class="custom-utility md:custom-utility lg:custom-utility">
+
+<!-- Test with dark mode -->
+<div class="custom-utility dark:custom-utility">
+
+<!-- Test with group hover -->
+<div class="group">
+  <div class="group-hover:custom-utility">
+</div>
+```
+
+<Info>
+  Remember: Custom styles should enhance Tailwind, not replace it. Use custom additions for project-specific needs while leveraging Tailwind's utilities for common patterns.
+</Info>

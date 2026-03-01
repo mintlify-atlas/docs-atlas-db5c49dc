@@ -1,0 +1,427 @@
+---
+title: 'Theme & Config Functions'
+description: 'Access theme values and configuration with theme() and config() methods'
+---
+
+## theme()
+
+Access theme configuration values from both CSS `@theme` declarations and JavaScript config.
+
+<ParamField path="path" type="string" required>
+  Dot-notation path to the theme value (e.g., `'colors.blue.500'`, `'spacing.4'`)
+</ParamField>
+
+<ParamField path="defaultValue" type="any">
+  Fallback value if the path doesn't exist
+</ParamField>
+
+### Basic Usage
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addUtilities, theme }) {
+  addUtilities({
+    '.custom': {
+      color: theme('colors.blue.500'),
+      padding: theme('spacing.4'),
+      borderRadius: theme('borderRadius.lg')
+    }
+  })
+})
+```
+
+### With Default Value
+
+```javascript
+const customColor = theme('colors.brand.primary', '#3b82f6')
+```
+
+### Nested Properties
+
+```javascript
+const colors = theme('colors')
+// Returns all color values as an object
+
+const spacing = theme('spacing')
+// Returns all spacing values
+
+const fontSize = theme('fontSize.xl')
+// Returns the xl font size value
+```
+
+### Using in matchUtilities
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ matchUtilities, theme }) {
+  matchUtilities(
+    {
+      'text-shadow': (value) => ({
+        'text-shadow': value
+      })
+    },
+    {
+      values: theme('boxShadow')
+    }
+  )
+})
+```
+
+### Extending Theme Colors
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(
+  function({ matchUtilities, theme }) {
+    matchUtilities(
+      {
+        scrollbar: (value) => ({
+          'scrollbar-color': value
+        })
+      },
+      {
+        type: 'color',
+        values: theme('colors')
+      }
+    )
+  },
+  {
+    theme: {
+      extend: {
+        colors: {
+          'brand': '#1fb6ff'
+        }
+      }
+    }
+  }
+)
+```
+
+```html
+<div class="scrollbar-brand">
+<div class="scrollbar-blue-500">
+```
+
+## Opacity Modifiers
+
+Theme colors support opacity modifiers using the `/` syntax:
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addUtilities, theme }) {
+  addUtilities({
+    '.percentage': {
+      color: theme('colors.red.500 / 50%')
+    },
+    '.fraction': {
+      color: theme('colors.red.500 / 0.5')
+    },
+    '.variable': {
+      color: theme('colors.red.500 / var(--opacity)')
+    }
+  })
+})
+```
+
+Compiles to:
+
+```css
+.percentage {
+  color: color-mix(in oklab, #ef4444 50%, transparent);
+}
+
+.fraction {
+  color: color-mix(in oklab, #ef4444 50%, transparent);
+}
+
+.variable {
+  color: #ef4444;
+}
+@supports (color: color-mix(in lab, red, red)) {
+  .variable {
+    color: color-mix(in oklab, #ef4444 var(--opacity), transparent);
+  }
+}
+```
+
+## Theme Value Resolution
+
+The `theme()` function merges values from multiple sources:
+
+1. **CSS theme values** from `@theme` declarations (highest priority)
+2. **Plugin config** from the `config` parameter
+3. **Global config** from configuration files
+4. **Default theme** values
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(
+  function({ addUtilities, theme }) {
+    addUtilities({
+      '.custom': {
+        // This will use the value from plugin config if present,
+        // otherwise falls back to global config or defaults
+        color: theme('colors.primary', '#000000')
+      }
+    })
+  },
+  {
+    theme: {
+      extend: {
+        colors: {
+          primary: '#1fb6ff'
+        }
+      }
+    }
+  }
+)
+```
+
+## Referencing Other Theme Values
+
+Theme functions can reference other theme keys:
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(
+  function({ matchUtilities, theme }) {
+    matchUtilities(
+      {
+        'animate-delay': (value) => ({
+          'animation-delay': value
+        })
+      },
+      {
+        values: theme('transitionDuration')
+      }
+    )
+  },
+  {
+    theme: {
+      extend: {
+        // Reference built-in theme values
+        animationDuration: ({ theme }) => ({
+          ...theme('transitionDuration')
+        }),
+        animationDelay: ({ theme }) => ({
+          ...theme('animationDuration')
+        })
+      }
+    }
+  }
+)
+```
+
+## Common Theme Paths
+
+| Path | Description | Example |
+|------|-------------|----------|
+| `colors` | Color palette | `colors.blue.500` |
+| `spacing` | Spacing scale | `spacing.4` |
+| `fontSize` | Font sizes | `fontSize.xl` |
+| `fontFamily` | Font families | `fontFamily.sans` |
+| `fontWeight` | Font weights | `fontWeight.bold` |
+| `lineHeight` | Line heights | `lineHeight.tight` |
+| `letterSpacing` | Letter spacing | `letterSpacing.wide` |
+| `borderRadius` | Border radii | `borderRadius.lg` |
+| `borderWidth` | Border widths | `borderWidth.2` |
+| `boxShadow` | Box shadows | `boxShadow.xl` |
+| `screens` | Breakpoints | `screens.md` |
+| `transitionDuration` | Durations | `transitionDuration.300` |
+| `transitionTimingFunction` | Easing functions | `transitionTimingFunction.ease-in-out` |
+| `zIndex` | Z-index values | `zIndex.50` |
+| `opacity` | Opacity values | `opacity.50` |
+
+## config()
+
+Access raw configuration values outside of the theme.
+
+<ParamField path="path" type="string">
+  Dot-notation path to the config value (e.g., `'prefix'`, `'important'`). Omit to get the entire config.
+</ParamField>
+
+<ParamField path="defaultValue" type="any">
+  Fallback value if the path doesn't exist
+</ParamField>
+
+### Get Entire Config
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ config }) {
+  const fullConfig = config()
+  console.log(fullConfig)
+})
+```
+
+### Access Specific Values
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ config }) {
+  const prefix = config('prefix', '')
+  const important = config('important', false)
+  const darkMode = config('darkMode', 'media')
+  
+  console.log({ prefix, important, darkMode })
+})
+```
+
+### Custom Config Options
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addUtilities, config }) {
+  const customOption = config('myPlugin.enabled', true)
+  
+  if (customOption) {
+    addUtilities({
+      '.custom': {
+        display: 'block'
+      }
+    })
+  }
+})
+```
+
+Usage:
+
+```javascript
+// tailwind.config.js
+export default {
+  myPlugin: {
+    enabled: true
+  },
+  plugins: [
+    require('./my-plugin')
+  ]
+}
+```
+
+## prefix()
+
+Apply the configured prefix to a class name.
+
+<ParamField path="className" type="string" required>
+  The class name to prefix
+</ParamField>
+
+### Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addUtilities, prefix }) {
+  addUtilities({
+    [`.${prefix('custom-utility')}`]: {
+      display: 'flex'
+    }
+  })
+})
+```
+
+With `prefix: 'tw-'` configuration:
+
+```css
+.tw-custom-utility {
+  display: flex;
+}
+```
+
+<Note>
+  In v4, the `prefix()` function is primarily for compatibility. The design system automatically handles prefixing for utilities registered through the Plugin API.
+</Note>
+
+## Bare Value Support
+
+Many theme keys support bare values (numeric values without explicit units):
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ matchUtilities, theme }) {
+  matchUtilities(
+    {
+      'animate-duration': (value) => ({
+        'animation-duration': value
+      })
+    },
+    {
+      values: theme('transitionDuration')
+    }
+  )
+})
+```
+
+```html
+<!-- Named value -->
+<div class="animate-duration-300">
+
+<!-- Bare value (automatically converts to 316ms) -->
+<div class="animate-duration-316">
+
+<!-- Arbitrary value -->
+<div class="animate-duration-[2s]">
+```
+
+## DEFAULT Key
+
+The `DEFAULT` key in theme objects maps to utilities without a suffix:
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(
+  function({ matchUtilities, theme }) {
+    matchUtilities(
+      {
+        'text-shadow': (value) => ({
+          'text-shadow': value
+        })
+      },
+      {
+        values: theme('textShadow')
+      }
+    )
+  },
+  {
+    theme: {
+      extend: {
+        textShadow: {
+          sm: '0 1px 2px rgba(0, 0, 0, 0.05)',
+          DEFAULT: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          lg: '0 8px 16px rgba(0, 0, 0, 0.15)'
+        }
+      }
+    }
+  }
+)
+```
+
+```html
+<div class="text-shadow"><!-- Uses DEFAULT value -->
+<div class="text-shadow-sm">
+<div class="text-shadow-lg">
+```
+
+## CSS Variable Access
+
+Access CSS custom properties directly:
+
+```javascript
+const value = theme('--color-primary')
+// Returns the value of --color-primary from @theme
+```
+
+<Note>
+  The `theme()` function intelligently merges CSS `@theme` values with JavaScript config, prioritizing CSS values for better performance and CSS-first workflows in v4.
+</Note>

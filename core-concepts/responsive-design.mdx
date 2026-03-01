@@ -1,0 +1,329 @@
+---
+title: Responsive Design
+description: Build fully responsive interfaces with Tailwind's mobile-first breakpoint system.
+---
+
+Tailwind uses a mobile-first breakpoint system that makes it easy to build responsive interfaces without leaving your HTML.
+
+## Breakpoint System
+
+Tailwind includes five responsive breakpoints by default, inspired by common device resolutions:
+
+| Breakpoint | Min Width | CSS Media Query |
+| ---------- | --------- | --------------- |
+| `sm`       | 640px     | `@media (width >= 640px)` |
+| `md`       | 768px     | `@media (width >= 768px)` |
+| `lg`       | 1024px    | `@media (width >= 1024px)` |
+| `xl`       | 1280px    | `@media (width >= 1280px)` |
+| `2xl`      | 1536px    | `@media (width >= 1536px)` |
+
+<Note>
+  These breakpoints use the modern `width >=` syntax instead of the older `min-width:` syntax, providing cleaner and more intuitive media queries.
+</Note>
+
+## Mobile-First Approach
+
+Every utility in Tailwind can be applied conditionally at different breakpoints. By default, unprefixed utilities apply to all screen sizes, while prefixed utilities only apply at the specified breakpoint and above.
+
+```html
+<!-- Width of 16 on mobile, 32 on medium screens and up, 48 on large screens and up -->
+<div class="w-16 md:w-32 lg:w-48">
+  <!-- Content -->
+</div>
+```
+
+This means you typically design for mobile first, then layer on changes for larger screens:
+
+<CodeGroup>
+```html Mobile First
+<!-- Stack vertically on mobile, horizontal on medium screens -->
+<div class="flex flex-col md:flex-row">
+  <div class="w-full md:w-1/2">Content 1</div>
+  <div class="w-full md:w-1/2">Content 2</div>
+</div>
+```
+
+```html Desktop First (Not Recommended)
+<!-- This approach requires more overrides -->
+<div class="flex flex-row max:flex-col">
+  <div class="w-1/2 max:w-full">Content 1</div>
+  <div class="w-1/2 max:w-full">Content 2</div>
+</div>
+```
+</CodeGroup>
+
+## How Breakpoints Work
+
+Under the hood, Tailwind generates CSS media queries for each breakpoint variant:
+
+```css
+/* Mobile (base styles) */
+.text-center {
+  text-align: center;
+}
+
+/* Tablet and up */
+@media (width >= 768px) {
+  .md\:text-left {
+    text-align: left;
+  }
+}
+
+/* Desktop and up */
+@media (width >= 1024px) {
+  .lg\:text-right {
+    text-align: right;
+  }
+}
+```
+
+From the Tailwind source code, breakpoint variants are registered as:
+
+```typescript
+// Registers breakpoint variants like `sm`, `md`, `lg`, etc.
+for (let [key, value] of theme.namespace('--breakpoint')) {
+  if (key === null) continue
+  variants.static(
+    key,
+    (ruleNode) => {
+      ruleNode.nodes = [atRule('@media', `(width >= ${value})`, ruleNode.nodes)]
+    },
+    { compounds: Compounds.AtRules },
+  )
+}
+```
+
+## Common Responsive Patterns
+
+### Responsive Layout
+
+<Tabs>
+  <Tab title="Grid">
+    ```html
+    <!-- 1 column on mobile, 2 on tablet, 3 on desktop -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div>Item 1</div>
+      <div>Item 2</div>
+      <div>Item 3</div>
+    </div>
+    ```
+  </Tab>
+  <Tab title="Flexbox">
+    ```html
+    <!-- Stack on mobile, row on tablet -->
+    <div class="flex flex-col md:flex-row gap-4">
+      <div class="flex-1">Sidebar</div>
+      <div class="flex-2">Main content</div>
+    </div>
+    ```
+  </Tab>
+  <Tab title="Container">
+    ```html
+    <!-- Responsive container with breakpoint-based max-widths -->
+    <div class="container mx-auto px-4">
+      <div class="max-w-full lg:max-w-screen-lg">
+        Content
+      </div>
+    </div>
+    ```
+  </Tab>
+</Tabs>
+
+### Responsive Typography
+
+```html
+<!-- Small text on mobile, larger on desktop -->
+<h1 class="text-2xl md:text-4xl lg:text-5xl font-bold">
+  Responsive Heading
+</h1>
+
+<p class="text-sm md:text-base lg:text-lg leading-relaxed">
+  Responsive body text with adjusted line height.
+</p>
+```
+
+### Responsive Spacing
+
+```html
+<!-- Tighter spacing on mobile, more generous on larger screens -->
+<div class="p-4 md:p-6 lg:p-8">
+  <div class="space-y-4 md:space-y-6 lg:space-y-8">
+    <div>Item 1</div>
+    <div>Item 2</div>
+    <div>Item 3</div>
+  </div>
+</div>
+```
+
+### Show/Hide Elements
+
+```html
+<!-- Hide on mobile, show on desktop -->
+<div class="hidden lg:block">
+  Desktop-only sidebar
+</div>
+
+<!-- Show on mobile, hide on desktop -->
+<button class="block lg:hidden">
+  Mobile menu toggle
+</button>
+```
+
+## Max-Width Breakpoints
+
+While mobile-first is recommended, you can also use `max` variants to target smaller screens:
+
+```html
+<!-- Apply styles only below the md breakpoint -->
+<div class="max-md:flex-col">
+  <!-- This is display: flex with flex-direction: column on screens smaller than 768px -->
+</div>
+```
+
+The `max` variant generates media queries using `width <`:
+
+```typescript
+variants.functional(
+  'max',
+  (ruleNode, variant) => {
+    if (variant.modifier) return null
+    let value = resolvedBreakpoints.get(variant)
+    if (value === null) return null
+
+    ruleNode.nodes = [atRule('@media', `(width < ${value})`, ruleNode.nodes)]
+  },
+  { compounds: Compounds.AtRules },
+)
+```
+
+<Warning>
+  Use `max-*` variants sparingly. They can create confusing overrides and make your CSS harder to maintain. Stick with mobile-first (`min-*` or unprefixed) whenever possible.
+</Warning>
+
+## Arbitrary Breakpoints
+
+Use arbitrary values to create one-off breakpoints:
+
+```html
+<!-- Apply styles at exactly 850px -->
+<div class="min-[850px]:flex">
+  <!-- Content -->
+</div>
+
+<!-- Apply styles below 400px -->
+<div class="max-[400px]:text-sm">
+  <!-- Content -->
+</div>
+```
+
+## Responsive with Other Variants
+
+Breakpoints can be combined with other variants like hover, focus, and dark mode:
+
+```html
+<!-- Hover effect only on desktop -->
+<button class="lg:hover:scale-105 transition">
+  Hover me on desktop
+</button>
+
+<!-- Different dark mode colors per breakpoint -->
+<div class="bg-white dark:bg-gray-900 md:dark:bg-gray-800">
+  Content
+</div>
+
+<!-- Focus styles per breakpoint -->
+<input class="focus:ring-2 md:focus:ring-4" />
+```
+
+## Container Queries
+
+Tailwind also supports container queries using the `@` variant:
+
+```html
+<!-- Apply styles based on container width, not viewport -->
+<div class="@container">
+  <div class="@lg:flex">
+    <!-- This flexes when the container (not viewport) is large -->
+  </div>
+</div>
+```
+
+Container queries use named containers with modifiers:
+
+```html
+<div class="@container/main">
+  <div class="@lg/main:flex">
+    <!-- Styles apply based on the 'main' container's width -->
+  </div>
+</div>
+```
+
+From the source, container queries work similarly to regular breakpoints:
+
+```typescript
+variants.functional(
+  '@',
+  (ruleNode, variant) => {
+    let value = resolvedWidths.get(variant)
+    if (value === null) return null
+
+    ruleNode.nodes = [
+      atRule(
+        '@container',
+        variant.modifier
+          ? `${variant.modifier.value} (width >= ${value})`
+          : `(width >= ${value})`,
+        ruleNode.nodes,
+      ),
+    ]
+  },
+  { compounds: Compounds.AtRules },
+)
+```
+
+## Orientation
+
+Target landscape and portrait orientations:
+
+```html
+<div class="portrait:hidden landscape:block">
+  Only visible in landscape mode
+</div>
+```
+
+## Print Styles
+
+Style elements for print media:
+
+```html
+<div class="print:hidden">
+  This won't appear when printed
+</div>
+
+<div class="hidden print:block">
+  This only appears when printed
+</div>
+```
+
+## Customizing Breakpoints
+
+Define custom breakpoints in your theme configuration:
+
+```css
+@theme {
+  --breakpoint-xs: 475px;
+  --breakpoint-3xl: 1920px;
+}
+```
+
+Now you can use `xs:` and `3xl:` variants throughout your HTML:
+
+```html
+<div class="xs:text-sm 3xl:text-2xl">
+  Custom breakpoint usage
+</div>
+```
+
+<Info>
+  Breakpoints are sorted automatically by their pixel values, so you don't need to worry about the order you define them in.
+</Info>

@@ -1,0 +1,259 @@
+---
+title: '@theme'
+description: Define custom CSS variables for your design system with the @theme directive
+---
+
+The `@theme` directive is used to define custom CSS variables (custom properties) that make up your design system. These variables can be referenced throughout your CSS and are automatically available to Tailwind utilities.
+
+## Syntax
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+  --spacing: 0.25rem;
+}
+```
+
+## Basic Usage
+
+### Defining Theme Variables
+
+Use `@theme` blocks to define custom properties that will be available as theme values:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --spacing: 0.25rem;
+  --breakpoint-md: 768px;
+}
+```
+
+These variables are automatically added to the `:root` selector and can be used by utilities like `bg-primary`, `text-secondary`, or referenced with the `theme()` function.
+
+### Multiple @theme Blocks
+
+You can have multiple `@theme` blocks throughout your CSS. All theme variables are merged together:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+}
+
+@theme {
+  --spacing: 0.25rem;
+}
+```
+
+## Options
+
+The `@theme` directive accepts several options that control how theme variables are processed:
+
+<ParamField path="reference" type="boolean">
+  Mark theme variables as reference-only. These variables won't be included in the final CSS output but can still be used by utilities.
+
+  ```css
+  @theme reference {
+    --color-base: #000;
+  }
+  ```
+</ParamField>
+
+<ParamField path="inline" type="boolean">
+  Inline the variable values directly instead of using CSS custom properties. This is useful for values that need to be computed at build time.
+
+  ```css
+  @theme inline {
+    --spacing: 0.25rem;
+  }
+
+  /* Results in direct values: */
+  .m-4 {
+    margin: 1rem; /* calc(0.25rem * 4) computed */
+  }
+  ```
+</ParamField>
+
+<ParamField path="default" type="boolean">
+  Mark theme variables as default values that can be overridden by user-defined theme values.
+
+  ```css
+  @theme default {
+    --color-primary: blue;
+  }
+  ```
+</ParamField>
+
+<ParamField path="static" type="boolean">
+  Mark theme variables as static values that won't change based on context.
+
+  ```css
+  @theme static {
+    --font-sans: system-ui, sans-serif;
+  }
+  ```
+</ParamField>
+
+<ParamField path="prefix()" type="string">
+  Add a prefix to theme variables and utilities. The prefix must be lowercase ASCII letters (a-z) only.
+
+  ```css
+  @theme prefix(tw) {
+    --color-primary: #3b82f6;
+  }
+
+  /* Creates variables like: */
+  /* --tw-color-primary: #3b82f6; */
+  /* And utilities: tw:bg-primary */
+  ```
+</ParamField>
+
+### Combining Options
+
+You can combine multiple options:
+
+```css
+@theme reference inline {
+  --spacing: 0.25rem;
+}
+
+@theme prefix(tw) default {
+  --color-primary: #3b82f6;
+}
+```
+
+## Including @keyframes
+
+The `@theme` block can also contain `@keyframes` definitions:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+```
+
+The `@keyframes` are automatically hoisted out of the `:root` selector and placed at the root level of your CSS.
+
+## Theme Namespaces
+
+Theme variables follow a namespace convention using double-dash prefixes:
+
+<CodeGroup>
+```css Colors
+@theme {
+  --color-primary: #3b82f6;
+  --color-red-500: #ef4444;
+}
+/* Used by: bg-primary, text-red-500 */
+```
+
+```css Spacing
+@theme {
+  --spacing: 0.25rem;
+  --spacing-4: 1rem;
+}
+/* Used by: m-4, p-4, w-4 */
+```
+
+```css Breakpoints
+@theme {
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+}
+/* Used by: sm:flex, md:grid */
+```
+
+```css Other Namespaces
+@theme {
+  --font-sans: system-ui;
+  --radius: 0.5rem;
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --opacity-50: 0.5;
+}
+```
+</CodeGroup>
+
+## Restrictions
+
+<Warning>
+  `@theme` blocks must only contain custom properties (variables starting with `--`) or `@keyframes` rules. Any other CSS will result in an error.
+</Warning>
+
+```css
+/* ❌ Invalid - contains regular CSS rules */
+@theme {
+  --color-primary: red;
+  .foo {
+    color: blue;
+  }
+}
+
+/* ✅ Valid */
+@theme {
+  --color-primary: red;
+
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+```
+
+## Output
+
+Theme variables are output in the `:root, :host` selector:
+
+```css
+/* Input */
+@theme {
+  --color-primary: #3b82f6;
+  --spacing: 0.25rem;
+}
+
+/* Output */
+:root, :host {
+  --color-primary: #3b82f6;
+  --spacing: 0.25rem;
+}
+```
+
+Variables marked as `reference` are excluded from the output:
+
+```css
+/* Input */
+@theme reference {
+  --color-base: #000;
+}
+
+/* Output - no CSS emitted */
+```
+
+## Escaping Special Characters
+
+When using special characters in variable names, they are automatically escaped:
+
+```css
+@theme {
+  --spacing-1\.5: 0.375rem;
+  --spacing-foo\/bar: 3rem;
+}
+
+/* Output */
+:root, :host {
+  --spacing-1\.5: 0.375rem;
+  --spacing-foo\/bar: 3rem;
+}
+```
+
+## Related
+
+- [theme() function](/api/css/theme-function) - Reference theme variables in CSS
+- [@utility](/api/css/at-utility) - Create custom utilities
+- [@variant](/api/css/at-variant) - Create custom variants

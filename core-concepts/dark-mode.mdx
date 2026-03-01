@@ -1,0 +1,424 @@
+---
+title: Dark Mode
+description: Learn how to implement dark mode in your Tailwind projects using class-based, media query, or custom strategies.
+---
+
+Tailwind includes a `dark` variant that lets you style your site differently when dark mode is enabled.
+
+## Dark Mode Strategies
+
+Tailwind supports multiple strategies for implementing dark mode. Choose the one that best fits your project's needs.
+
+### Media Query Strategy (Default)
+
+By default, Tailwind uses the `prefers-color-scheme` media query to detect dark mode:
+
+```html
+<!-- Automatically uses system preference -->
+<div class="bg-white dark:bg-gray-900">
+  <h1 class="text-gray-900 dark:text-white">
+    Hello World
+  </h1>
+</div>
+```
+
+This generates CSS like:
+
+```css
+.bg-white {
+  background-color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .dark\:bg-gray-900 {
+    background-color: #111827;
+  }
+}
+```
+
+From the source code, the media strategy is implemented as:
+
+```typescript
+if (mode === 'media') {
+  addVariant('dark', '@media (prefers-color-scheme: dark)')
+}
+```
+
+### Selector Strategy (Class-based)
+
+For manual dark mode toggling, use the selector strategy by adding a `dark` class to your HTML:
+
+```css
+@theme {
+  --dark-mode: selector;
+}
+```
+
+Now dark mode is controlled by a `.dark` class on a parent element:
+
+```html
+<!-- Light mode -->
+<html>
+  <body>
+    <div class="bg-white dark:bg-gray-900">
+      <!-- bg-white -->
+    </div>
+  </body>
+</html>
+
+<!-- Dark mode -->
+<html class="dark">
+  <body>
+    <div class="bg-white dark:bg-gray-900">
+      <!-- bg-gray-900 -->
+    </div>
+  </body>
+</html>
+```
+
+The selector strategy uses the `:where()` pseudo-class for specificity control:
+
+```typescript
+if (mode === 'selector') {
+  addVariant('dark', `&:where(${selector}, ${selector} *)`)
+}
+```
+
+This generates CSS like:
+
+```css
+.bg-white {
+  background-color: #fff;
+}
+
+.dark\:bg-gray-900:where(.dark, .dark *) {
+  background-color: #111827;
+}
+```
+
+### Custom Selector
+
+Customize the dark mode selector:
+
+```css
+@theme {
+  --dark-mode: selector(.nightmode);
+}
+```
+
+```html
+<html class="nightmode">
+  <!-- Dark mode styles apply -->
+</html>
+```
+
+### Variant Strategy
+
+For complete control, use the variant strategy with a custom selector pattern:
+
+```css
+@theme {
+  --dark-mode: variant('[data-theme="dark"] &');
+}
+```
+
+```html
+<html data-theme="dark">
+  <body>
+    <div class="bg-white dark:bg-gray-900">
+      <!-- bg-gray-900 -->
+    </div>
+  </body>
+</html>
+```
+
+<Note>
+  When using the variant strategy, you must include `&` in your selector to indicate where the utility's selector should be inserted.
+</Note>
+
+## Common Dark Mode Patterns
+
+### Color Schemes
+
+<Tabs>
+  <Tab title="Background & Text">
+    ```html
+    <div class="bg-white dark:bg-gray-900">
+      <h1 class="text-gray-900 dark:text-white">
+        Heading
+      </h1>
+      <p class="text-gray-600 dark:text-gray-300">
+        Body text
+      </p>
+    </div>
+    ```
+  </Tab>
+  <Tab title="Borders">
+    ```html
+    <div class="border border-gray-200 dark:border-gray-700">
+      <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div>Item 1</div>
+        <div>Item 2</div>
+      </div>
+    </div>
+    ```
+  </Tab>
+  <Tab title="Shadows">
+    ```html
+    <div class="shadow-lg dark:shadow-gray-900/30">
+      Card with adjusted shadow in dark mode
+    </div>
+    ```
+  </Tab>
+</Tabs>
+
+### Form Elements
+
+```html
+<input
+  type="text"
+  class="
+    bg-white dark:bg-gray-800
+    border border-gray-300 dark:border-gray-600
+    text-gray-900 dark:text-white
+    placeholder-gray-400 dark:placeholder-gray-500
+    focus:border-blue-500 dark:focus:border-blue-400
+    focus:ring-blue-500 dark:focus:ring-blue-400
+  "
+  placeholder="Search..."
+/>
+```
+
+### Images & Icons
+
+```html
+<!-- Swap images -->
+<img class="block dark:hidden" src="logo-light.svg" alt="Logo" />
+<img class="hidden dark:block" src="logo-dark.svg" alt="Logo" />
+
+<!-- Adjust icon colors -->
+<svg class="text-gray-600 dark:text-gray-400">
+  <!-- Icon path -->
+</svg>
+```
+
+### Gradients
+
+```html
+<div class="
+  bg-gradient-to-r
+  from-blue-500 to-purple-600
+  dark:from-blue-600 dark:to-purple-700
+">
+  Gradient that adapts to dark mode
+</div>
+```
+
+## Combining with Other Variants
+
+Dark mode works seamlessly with all other Tailwind variants:
+
+### Hover States
+
+```html
+<button class="
+  bg-blue-500 hover:bg-blue-600
+  dark:bg-blue-600 dark:hover:bg-blue-700
+  text-white
+">
+  Hover me
+</button>
+```
+
+### Focus States
+
+```html
+<input class="
+  border-gray-300 focus:border-blue-500 focus:ring-blue-500
+  dark:border-gray-600 dark:focus:border-blue-400 dark:focus:ring-blue-400
+" />
+```
+
+### Responsive Design
+
+```html
+<div class="
+  bg-white md:bg-gray-50
+  dark:bg-gray-900 dark:md:bg-gray-800
+">
+  Different colors per breakpoint and mode
+</div>
+```
+
+### Group Hover
+
+```html
+<div class="group">
+  <div class="
+    bg-white group-hover:bg-gray-50
+    dark:bg-gray-800 dark:group-hover:bg-gray-700
+  ">
+    Nested element responds to parent hover in both modes
+  </div>
+</div>
+```
+
+## Toggling Dark Mode
+
+When using the selector strategy, implement dark mode toggling with JavaScript:
+
+<CodeGroup>
+```javascript Vanilla JS
+// On page load or when changing themes, best to add inline in `head` to avoid FOUC
+if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  document.documentElement.classList.add('dark')
+} else {
+  document.documentElement.classList.remove('dark')
+}
+
+// Whenever the user explicitly chooses light mode
+localStorage.theme = 'light'
+
+// Whenever the user explicitly chooses dark mode
+localStorage.theme = 'dark'
+
+// Whenever the user explicitly chooses to respect the OS preference
+localStorage.removeItem('theme')
+```
+
+```javascript React
+import { useState, useEffect } from 'react'
+
+function ThemeToggle() {
+  const [darkMode, setDarkMode] = useState(false)
+
+  useEffect(() => {
+    const isDark = localStorage.theme === 'dark' ||
+      (!('theme' in localStorage) && 
+       window.matchMedia('(prefers-color-scheme: dark)').matches)
+    setDarkMode(isDark)
+    if (isDark) {
+      document.documentElement.classList.add('dark')
+    }
+  }, [])
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode)
+    if (!darkMode) {
+      document.documentElement.classList.add('dark')
+      localStorage.theme = 'dark'
+    } else {
+      document.documentElement.classList.remove('dark')
+      localStorage.theme = 'light'
+    }
+  }
+
+  return (
+    <button onClick={toggleDarkMode}>
+      {darkMode ? '☀️' : '🌙'}
+    </button>
+  )
+}
+```
+
+```javascript Vue
+<template>
+  <button @click="toggleDarkMode">
+    {{ darkMode ? '☀️' : '🌙' }}
+  </button>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const darkMode = ref(false)
+
+onMounted(() => {
+  const isDark = localStorage.theme === 'dark' ||
+    (!('theme' in localStorage) && 
+     window.matchMedia('(prefers-color-scheme: dark)').matches)
+  darkMode.value = isDark
+  if (isDark) {
+    document.documentElement.classList.add('dark')
+  }
+})
+
+function toggleDarkMode() {
+  darkMode.value = !darkMode.value
+  if (darkMode.value) {
+    document.documentElement.classList.add('dark')
+    localStorage.theme = 'dark'
+  } else {
+    document.documentElement.classList.remove('dark')
+    localStorage.theme = 'light'
+  }
+}
+</script>
+```
+</CodeGroup>
+
+## Avoiding Flash of Unstyled Content
+
+When using the selector strategy, add this script to your `<head>` before any other content to prevent a flash of the wrong theme:
+
+```html
+<script>
+  // On page load
+  if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark')
+  } else {
+    document.documentElement.classList.remove('dark')
+  }
+</script>
+```
+
+<Warning>
+  This script must run synchronously in the `<head>` before your content renders. Don't defer or async it.
+</Warning>
+
+## Best Practices
+
+### Design System Consistency
+
+Define semantic color variables that work in both modes:
+
+```css
+@theme {
+  /* Light mode colors */
+  --color-background: white;
+  --color-foreground: black;
+  --color-primary: #3b82f6;
+  
+  /* Dark mode overrides */
+  @media (prefers-color-scheme: dark) {
+    --color-background: #111827;
+    --color-foreground: white;
+    --color-primary: #60a5fa;
+  }
+}
+```
+
+### Accessibility
+
+Ensure sufficient contrast in both modes:
+
+```html
+<!-- Good: High contrast in both modes -->
+<div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+
+<!-- Bad: Poor contrast in dark mode -->
+<div class="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+```
+
+### Test Both Modes
+
+Always test your UI in both light and dark modes to ensure:
+- Sufficient color contrast
+- Readable text
+- Visible borders and dividers
+- Proper image handling
+- Correct icon colors
+
+<Info>
+  Use browser DevTools to toggle between light and dark mode preferences for quick testing.
+</Info>

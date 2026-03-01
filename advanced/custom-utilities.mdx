@@ -1,0 +1,290 @@
+---
+title: Custom Utilities
+description: Create custom utility classes with the @utility directive
+---
+
+## Overview
+
+Tailwind CSS allows you to define custom utility classes using the `@utility` directive. This powerful feature enables you to extend the framework with your own reusable utility classes that follow Tailwind's naming conventions and work with variants.
+
+## Static Utilities
+
+Static utilities are simple, single-purpose classes with a fixed value.
+
+### Basic Static Utility
+
+```css
+@utility text-trim {
+  text-box-trim: both;
+  text-box-edge: cap alphabetic;
+}
+```
+
+```html
+<p class="text-trim">Trimmed text</p>
+```
+
+This creates a `.text-trim` utility that applies text trimming properties.
+
+### Using Theme Variables
+
+Custom utilities can reference theme variables:
+
+```css
+@theme {
+  --example-foo: 123px;
+}
+
+@utility foo {
+  value: var(--example-foo);
+}
+```
+
+<Note>
+Theme variables are only emitted when the utility is actually used in your markup.
+</Note>
+
+### Negative Utilities
+
+You can create negative utilities by prefixing the name with a dash:
+
+```css
+@utility -example {
+  value: -1;
+}
+```
+
+```html
+<div class="-example">Negative value</div>
+```
+
+## Functional Utilities
+
+Functional utilities accept values and must end with `-*` in their definition.
+
+### Basic Functional Utility
+
+```css
+@utility tab-* {
+  tab-size: *;
+}
+```
+
+```html
+<pre class="tab-4">Code with 4-space tabs</pre>
+<pre class="tab-8">Code with 8-space tabs</pre>
+```
+
+The `*` in the utility name indicates where the value goes, and the `*` in the property value is replaced with the actual value.
+
+### Using Theme Values
+
+Functional utilities can resolve values from your theme:
+
+```css
+@theme {
+  --spacing: 0.25rem;
+}
+
+@utility example-* {
+  margin: calc(var(--spacing) * *);
+}
+```
+
+```html
+<div class="example-4">4x spacing margin</div>
+<div class="example-8">8x spacing margin</div>
+```
+
+### Arbitrary Values
+
+Functional utilities automatically support arbitrary values:
+
+```html
+<div class="tab-[12]">Custom tab size</div>
+```
+
+### Multiple Properties
+
+You can use the wildcard value in multiple properties:
+
+```css
+@utility paint-* {
+  color: *;
+  fill: *;
+}
+```
+
+```html
+<svg class="paint-red-500">...</svg>
+```
+
+## Advanced Features
+
+### Overriding Core Utilities
+
+You can override or extend built-in utilities:
+
+```css
+@theme reference {
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+}
+
+@utility text-sm {
+  font-size: var(--text-sm, 0.875rem);
+  line-height: var(--text-sm--line-height, 1.25rem);
+  text-rendering: optimizeLegibility;
+}
+```
+
+<Warning>
+When overriding core utilities, both your custom version and the core version will be applied. Properties from your custom utility will be merged with core properties.
+</Warning>
+
+### Overriding Default Values
+
+You can override the default value of functional utilities:
+
+```css
+@theme reference {
+  --radius-xl: 16px;
+}
+
+@utility rounded {
+  border-radius: 50rem;
+}
+```
+
+```html
+<div class="rounded">Uses 50rem (custom default)</div>
+<div class="rounded-xl">Uses --radius-xl from theme</div>
+<div class="rounded-[33px]">Uses arbitrary value</div>
+```
+
+### Special Characters
+
+Some special characters are allowed in utility names:
+
+```css
+@utility push-1/2 {
+  right: 50%;
+}
+
+@utility push-50% {
+  right: 50%;
+}
+```
+
+```html
+<div class="push-1/2">Positioned at 50%</div>
+<div class="push-50%">Also positioned at 50%</div>
+```
+
+<Tip>
+Utility names must be alphanumeric and start with a lowercase letter. The `/` and `%` characters are allowed as special cases.
+</Tip>
+
+### Multiple Definitions
+
+If you define the same utility multiple times, they will be merged:
+
+```css
+@utility really-round {
+  --custom-prop: hi;
+  border-radius: 50rem;
+}
+
+@utility really-round {
+  border-radius: 30rem;
+}
+```
+
+The result:
+```css
+.really-round {
+  --custom-prop: hi;
+  border-radius: 30rem; /* Last value wins */
+}
+```
+
+## Working with Variants
+
+Custom utilities work seamlessly with all Tailwind variants:
+
+```html
+<div class="text-trim hover:text-trim lg:text-trim">
+  Responsive and interactive
+</div>
+```
+
+### Using @apply with Custom Utilities
+
+Custom utilities can be applied using `@apply`:
+
+```css
+.my-component {
+  @apply text-trim tab-4;
+}
+```
+
+## Rules and Constraints
+
+<Warning>
+**Important Rules:**
+
+- `@utility` must be defined at the top level (not nested)
+- Utility names must be alphanumeric and start with a lowercase letter
+- Functional utilities must end with `-*`
+- The wildcard (`-*`) must appear only once, at the end
+- Utility definitions must contain at least one property
+</Warning>
+
+### Invalid Examples
+
+```css
+/* ❌ Nested utility */
+.foo {
+  @utility bar {
+    color: red;
+  }
+}
+
+/* ❌ Empty utility */
+@utility foo {
+}
+
+/* ❌ Invalid characters */
+@utility 💨 {
+  color: red;
+}
+
+/* ❌ Wildcard in wrong position */
+@utility my-*-utility {
+  color: *;
+}
+
+/* ❌ Missing wildcard suffix */
+@utility foo* {
+  color: red;
+}
+```
+
+## Best Practices
+
+<Tip>
+**Recommendations:**
+
+1. Use descriptive, semantic names for your utilities
+2. Keep utilities single-purpose and composable
+3. Reference theme variables when possible for consistency
+4. Document complex utilities with comments
+5. Test utilities with variants before deploying
+</Tip>
+
+## Source Code Reference
+
+The utility system is implemented in:
+- `/packages/tailwindcss/src/utilities.ts:101-155` - Utilities class
+- `/packages/tailwindcss/src/utilities.ts:370-376` - staticUtility helper
+- `/packages/tailwindcss/src/utilities.ts:393-477` - functionalUtility helper

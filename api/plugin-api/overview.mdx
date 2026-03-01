@@ -1,0 +1,188 @@
+---
+title: 'Plugin System Overview'
+description: 'Create custom Tailwind CSS plugins to extend the framework with utilities, variants, and base styles'
+---
+
+## Introduction
+
+The Tailwind CSS plugin system allows you to extend the framework with custom utilities, variants, components, and base styles. Plugins receive a `PluginAPI` object with methods to register new styles and access theme configuration.
+
+## plugin() Function
+
+Create a plugin by calling the default export from `tailwindcss/plugin`.
+
+<ParamField path="handler" type="(api: PluginAPI) => void" required>
+  Function that receives the Plugin API and registers custom styles
+</ParamField>
+
+<ParamField path="config" type="Partial<Config>">
+  Optional configuration object to extend theme values or add variants
+</ParamField>
+
+### Basic Plugin
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addUtilities }) {
+  addUtilities({
+    '.scrollbar-none': {
+      'scrollbar-width': 'none',
+      '&::-webkit-scrollbar': {
+        display: 'none'
+      }
+    }
+  })
+})
+```
+
+### Plugin with Configuration
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addBase }) {
+  addBase({
+    body: {
+      margin: '0'
+    }
+  })
+}, {
+  theme: {
+    extend: {
+      colors: {
+        'brand-blue': '#1fb6ff'
+      }
+    }
+  }
+})
+```
+
+## plugin.withOptions()
+
+Create a plugin that accepts configuration options.
+
+<ParamField path="pluginFunction" type="(options?: T) => PluginFn" required>
+  Function that returns a plugin handler based on the provided options
+</ParamField>
+
+<ParamField path="configFunction" type="(options?: T) => Partial<Config>">
+  Optional function that returns configuration based on the provided options
+</ParamField>
+
+### Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin.withOptions(
+  function(options = { className: 'scrollbar-none' }) {
+    return function({ addUtilities }) {
+      addUtilities({
+        [`.${options.className}`]: {
+          'scrollbar-width': 'none'
+        }
+      })
+    }
+  },
+  function(options = {}) {
+    return {
+      theme: {
+        extend: {
+          colors: options.colors || {}
+        }
+      }
+    }
+  }
+)
+```
+
+## PluginAPI Interface
+
+The Plugin API provides methods to extend Tailwind CSS:
+
+| Method | Description |
+|--------|-------------|
+| `addUtilities()` | Register static utility classes |
+| `matchUtilities()` | Register dynamic utilities that accept values |
+| `addVariant()` | Register a static variant |
+| `matchVariant()` | Register a dynamic variant that accepts values |
+| `addBase()` | Add base styles to the `@layer base` |
+| `addComponents()` | Add component styles (alias for `addUtilities`) |
+| `theme()` | Access theme configuration values |
+| `config()` | Access arbitrary configuration values |
+| `prefix()` | Apply the configured prefix to a class name |
+
+## CssInJs Type
+
+Plugins use a CSS-in-JS object format to define styles:
+
+```typescript
+type CssInJs = {
+  [key: string]: string | string[] | CssInJs | CssInJs[]
+}
+```
+
+### Features
+
+- **Nested selectors**: Use `&` for the current selector
+- **Pseudo-classes**: Define `:hover`, `:focus`, etc. as nested objects
+- **Media queries**: Use `@media` as object keys
+- **At-rules**: Support for `@supports`, `@keyframes`, etc.
+- **camelCase properties**: Automatically converted to kebab-case
+- **Arrays**: Multiple values for the same property
+
+### Example
+
+```javascript
+{
+  '.custom-utility': {
+    display: 'flex',
+    flexDirection: 'column',
+    '&:hover': {
+      opacity: '0.8'
+    },
+    '@media (min-width: 768px)': {
+      flexDirection: 'row'
+    }
+  }
+}
+```
+
+## Loading Plugins
+
+### In CSS Files
+
+```css
+@plugin "./plugins/my-plugin.js";
+```
+
+### In Configuration Files
+
+```javascript
+import myPlugin from './plugins/my-plugin'
+
+export default {
+  plugins: [
+    myPlugin,
+    myPlugin({ option: 'value' }) // For plugins with options
+  ]
+}
+```
+
+## Type Exports
+
+```typescript
+import type {
+  Config,
+  PluginAPI,
+  PluginCreator,
+  PluginsConfig,
+  PluginUtils,
+  ThemeConfig
+} from 'tailwindcss/plugin'
+```
+
+<Note>
+  Plugin handlers are called during build time. Use the design system API to register utilities and variants that are generated on demand.
+</Note>

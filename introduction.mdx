@@ -1,0 +1,116 @@
+---
+title: Introduction to Tailwind CSS
+description: A utility-first CSS framework for rapidly building custom user interfaces
+---
+
+# Welcome to Tailwind CSS
+
+Tailwind CSS is a utility-first CSS framework that gives you low-level utility classes to build completely custom designs without ever leaving your HTML.
+
+## Why Tailwind CSS?
+
+Instead of opinionated predesigned components, Tailwind provides low-level utility classes that let you build completely custom designs without fighting the framework.
+
+<CardGroup cols={2}>
+  <Card
+    title="Quick to Build"
+    icon="bolt"
+    href="/quickstart"
+  >
+    Get started in minutes with our quickstart guide and build your first Tailwind project
+  </Card>
+  <Card
+    title="Utility-First"
+    icon="layer-group"
+    href="/core-concepts/utility-first"
+  >
+    Build complex components from a constrained set of primitive utilities
+  </Card>
+  <Card
+    title="Responsive Design"
+    icon="mobile"
+    href="/core-concepts/responsive-design"
+  >
+    Responsive everything with intuitive responsive modifiers built right in
+  </Card>
+  <Card
+    title="Customizable"
+    icon="palette"
+    href="/customization/theme"
+  >
+    Customize your design system with CSS variables and configuration
+  </Card>
+</CardGroup>
+
+## Features at a Glance
+
+### Lightning Fast Development
+
+Write utility classes directly in your markup and see changes instantly. No context switching between HTML and CSS files.
+
+```html
+<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+  Click me
+</button>
+```
+
+### Built for Production
+
+Tailwind automatically removes unused CSS in production, resulting in the smallest possible file size.
+
+<Tip>
+  Tailwind CSS v4 introduces a new high-performance engine built in Rust, delivering faster builds and better developer experience.
+</Tip>
+
+### Framework Agnostic
+
+Tailwind CSS works with any framework or no framework at all. Use it with React, Vue, Angular, Next.js, or plain HTML.
+
+<CardGroup cols={3}>
+  <Card title="Vite" icon="vite" />
+  <Card title="Next.js" icon="react" />
+  <Card title="PostCSS" icon="css3" />
+</CardGroup>
+
+## What's New in v4
+
+Tailwind CSS v4 brings significant performance improvements and new features:
+
+- **Rust-powered engine**: Up to 10x faster builds with the new Oxide engine
+- **Zero configuration**: Works out of the box with automatic content detection
+- **Enhanced CSS features**: Native CSS variable support and improved `@apply` handling
+- **Modern color palettes**: New mauve, olive, mist, and taupe colors in the default theme
+- **Logical properties**: New utilities for modern CSS logical properties (`inline-*`, `block-*`, `inset-s-*`, etc.)
+
+<Note>
+  Tailwind CSS v4 includes breaking changes from v3. Check out the [migration guide](/upgrading/v3-to-v4) if you're upgrading an existing project.
+</Note>
+
+## Next Steps
+
+<Steps>
+  <Step title="Install Tailwind CSS">
+    Follow our [installation guide](/installation) to set up Tailwind in your project using npm, yarn, or pnpm.
+  </Step>
+  <Step title="Quick Start">
+    Jump into our [quickstart guide](/quickstart) to build your first component in minutes.
+  </Step>
+  <Step title="Editor Setup">
+    Configure your editor with [IntelliSense and plugins](/editor-setup) for the best development experience.
+  </Step>
+  <Step title="Explore Core Concepts">
+    Learn about [utility-first CSS](/core-concepts/utility-first) and how Tailwind's approach differs from traditional CSS frameworks.
+  </Step>
+</Steps>
+
+## Community & Support
+
+Join thousands of developers building with Tailwind CSS:
+
+- [GitHub Discussions](https://github.com/tailwindlabs/tailwindcss/discussions) - Ask questions and share your projects
+- [Discord Community](https://tailwindcss.com/discord) - Chat with other Tailwind developers
+- [Twitter](https://twitter.com/tailwindcss) - Stay updated with the latest news and tips
+
+<Warning>
+  This documentation covers Tailwind CSS v4. If you're using v3, please refer to the [v3 documentation](https://v3.tailwindcss.com).
+</Warning>

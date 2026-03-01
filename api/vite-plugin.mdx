@@ -1,0 +1,275 @@
+---
+title: Vite Plugin
+description: Complete API reference for the @tailwindcss/vite plugin
+---
+
+The `@tailwindcss/vite` plugin integrates Tailwind CSS v4 into your Vite projects with automatic CSS generation, hot module replacement, and build optimization.
+
+## Installation
+
+```bash
+npm install @tailwindcss/vite
+```
+
+## Basic Usage
+
+```js vite.config.js
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [tailwindcss()],
+})
+```
+
+Then create a CSS file that imports Tailwind:
+
+```css src/index.css
+@import 'tailwindcss';
+```
+
+## Plugin Options
+
+The Vite plugin accepts an options object to customize its behavior.
+
+### Type Definition
+
+```ts
+export type PluginOptions = {
+  /**
+   * Optimize and minify the output CSS.
+   */
+  optimize?: boolean | { minify?: boolean }
+}
+```
+
+### Configuration
+
+<ParamField path="optimize" type="boolean | { minify?: boolean }">
+  Controls CSS optimization using Lightning CSS. By default, optimization is enabled during production builds and disabled in development.
+  
+  - `true` - Enable optimization and minification
+  - `false` - Disable optimization completely
+  - `{ minify: false }` - Enable optimization but disable minification
+  
+  **Default:** Automatically detected based on `config.build.cssMinify`
+</ParamField>
+
+## Examples
+
+### Disable Optimization
+
+Prevent Lightning CSS from processing your output:
+
+```js vite.config.js
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      optimize: false,
+    }),
+  ],
+})
+```
+
+### Enable Optimization Without Minification
+
+Use Lightning CSS for vendor prefixing and other optimizations, but keep the CSS readable:
+
+```js vite.config.js
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      optimize: { minify: false },
+    }),
+  ],
+})
+```
+
+## Plugin Architecture
+
+The Vite plugin is implemented as an array of three internal plugins that handle different stages of the build process:
+
+### 1. Scan Plugin (`@tailwindcss/vite:scan`)
+
+- **Enforce:** `pre`
+- **Purpose:** Initializes configuration and sets up the development server
+- **Key Features:**
+  - Resolves Vite configuration
+  - Determines optimization settings based on build mode
+  - Configures server hooks for HMR
+
+### 2. Generate Plugin (Serve Mode)
+
+**Name:** `@tailwindcss/vite:generate:serve`
+
+- **Apply:** `serve` (development mode only)
+- **Enforce:** `pre`
+- **Purpose:** Generates CSS during development with fast incremental builds
+- **Key Features:**
+  - Hot module replacement support
+  - File watching for content changes
+  - Full page reload for external file changes (HTML, PHP, etc.)
+  - Per-environment CSS generation
+
+### 3. Generate Plugin (Build Mode)
+
+**Name:** `@tailwindcss/vite:generate:build`
+
+- **Apply:** `build` (production mode only)
+- **Enforce:** `pre`
+- **Purpose:** Generates and optimizes CSS for production builds
+- **Key Features:**
+  - Automatic optimization with Lightning CSS
+  - Source map generation
+  - Minification when enabled
+
+## Internal Behavior
+
+### CSS Root Detection
+
+The plugin automatically detects Tailwind CSS root files by checking for:
+
+- `.css` file extensions
+- `&lang.css` query parameters
+- Inline style blocks with CSS
+- Files containing Tailwind directives (`@tailwind`, `@apply`, `@theme`, etc.)
+
+Files are excluded if they:
+- Are in the `.vite/` directory
+- Have special query parameters (`?worker`, `?url`, `?raw`, etc.)
+- Are CommonJS proxy modules
+
+### Scanning and Compilation
+
+The plugin uses the `Root` class to manage compilation state:
+
+```ts
+class Root {
+  // Lazily-initialized compiler from @tailwindcss/node
+  private compiler?: Awaited<ReturnType<typeof compile>>
+  
+  // Scanner for finding class candidates in source files
+  private scanner?: Scanner
+  
+  // Accumulated candidates from all scans
+  private candidates: Set<string>
+  
+  // Build dependencies with modification times
+  private buildDependencies: Map<string, number | null>
+}
+```
+
+**Compilation Process:**
+
+1. Check if rebuild is required by comparing file modification times
+2. Clear Node.js require cache for changed dependencies
+3. Initialize or reuse Tailwind compiler with CSS resolvers
+4. Set up scanner based on `@source` directives or default patterns
+5. Scan source files for class candidates
+6. Build CSS from accumulated candidates
+7. Generate source maps if enabled
+
+### Hot Module Replacement
+
+The plugin provides intelligent HMR behavior:
+
+**For CSS Files:**
+- Standard HMR updates through Vite's module graph
+
+**For External Files (HTML, PHP, templates):**
+- Detected via `addWatchFile` without module entries
+- Triggers full page reload when changed
+- Validates file is actually scanned by Tailwind roots
+- Supports multi-environment updates (client + SSR)
+
+### Dependency Tracking
+
+The plugin tracks three types of dependencies:
+
+1. **Build Dependencies:** Config files, plugins, imported CSS
+2. **Source Files:** Individual files found by scanner
+3. **Glob Patterns:** Directory patterns for content scanning
+
+All dependencies are registered with Vite's module graph for proper watching and invalidation.
+
+## Source Map Support
+
+Source maps are generated in development when `css.devSourcemap` is enabled in Vite config:
+
+```js vite.config.js
+export default defineConfig({
+  css: {
+    devSourcemap: true,
+  },
+  plugins: [tailwindcss()],
+})
+```
+
+Source maps help you trace generated CSS back to your source files in browser DevTools.
+
+## Multi-Environment Support
+
+The plugin supports Vite's multi-environment API:
+
+- Separate compilation roots per environment (client, SSR, custom)
+- Environment-specific module resolution
+- Cross-environment HMR updates
+- Backward compatibility with Vite < 7
+
+## Performance Optimizations
+
+### Incremental Builds
+
+- Candidates are accumulated across rebuilds
+- Compiler and scanner are reused when possible
+- Only changed dependencies trigger full rebuilds
+
+### Caching Strategy
+
+- Build dependencies tracked by modification time
+- Scanner state persisted between builds
+- Separate caches per environment
+
+### File Exclusions
+
+The plugin automatically excludes certain files to avoid issues:
+
+- SVG files with `#` or `?` in path (causes Vite crashes)
+- Input CSS file itself (already a dependency)
+- Files in `.vite/` directory
+
+## TypeScript Support
+
+The plugin is written in TypeScript and includes full type definitions:
+
+```ts
+import type { PluginOptions } from '@tailwindcss/vite'
+import tailwindcss from '@tailwindcss/vite'
+```
+
+## Compatibility
+
+- **Vite:** 5.2.0 or higher
+- **Node.js:** 18.0.0 or higher
+- **Tailwind CSS:** v4.0.0 or higher
+
+## Debugging
+
+Enable debug logging by setting the `DEBUG` environment variable:
+
+```bash
+DEBUG=1 vite
+```
+
+This outputs detailed timing information for:
+- CSS generation
+- Candidate scanning
+- Compiler setup
+- Optimization passes
+- Source map generation

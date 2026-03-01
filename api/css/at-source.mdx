@@ -1,0 +1,364 @@
+---
+title: '@source'
+description: Specify content source paths for Tailwind to scan for class names
+---
+
+The `@source` directive tells Tailwind CSS where to look for utility class names in your project files. This is the CSS equivalent of the `content` configuration option.
+
+## Syntax
+
+```css
+@source "path/to/files/**/*.{html,js}";
+```
+
+## Basic Usage
+
+### Single Source Path
+
+Define a glob pattern to scan for class names:
+
+```css
+@source "./src/**/*.{html,js,jsx}";
+
+@tailwind utilities;
+```
+
+Tailwind will scan all `.html`, `.js`, and `.jsx` files in the `./src` directory and its subdirectories.
+
+### Multiple Source Paths
+
+You can specify multiple `@source` directives:
+
+```css
+@source "./src/**/*.tsx";
+@source "./components/**/*.vue";
+@source "./pages/**/*.php";
+
+@tailwind utilities;
+```
+
+### Quoted Paths Required
+
+<Warning>
+  Source paths must be wrapped in quotes (single or double).
+</Warning>
+
+```css
+/* ❌ Invalid - missing quotes */
+@source ./src/**/*.html;
+
+/* ✅ Valid - double quotes */
+@source "./src/**/*.html";
+
+/* ✅ Valid - single quotes */
+@source './src/**/*.html';
+```
+
+## Negating Paths
+
+Exclude specific paths using the `not` keyword:
+
+```css
+@source "./src/**/*.js";
+@source not "./src/vendor/**";
+```
+
+This scans all JavaScript files in `./src` except those in `./src/vendor`.
+
+### Multiple Negations
+
+```css
+@source "./src/**/*.ts";
+@source not "./src/**/*.test.ts";
+@source not "./src/**/*.spec.ts";
+```
+
+## Inline Candidates
+
+The `inline()` function allows you to specify utility classes directly in CSS, ensuring they're always included:
+
+### Basic Inline
+
+```css
+@source inline("flex items-center justify-center");
+
+@tailwind utilities;
+```
+
+This guarantees that `flex`, `items-center`, and `justify-center` are always generated, even if they're not found in your source files.
+
+### Use Cases for Inline
+
+<CodeGroup>
+```css Always-included utilities
+/* Ensure base utilities are always available */
+@source inline("block inline flex grid");
+```
+
+```css Dynamic class names
+/* Include utilities used in dynamic expressions */
+@source inline("bg-red-500 bg-blue-500 bg-green-500");
+/* For: <div className={`bg-${color}-500`}> */
+```
+
+```css Third-party components
+/* Include utilities used by external components */
+@source inline("prose prose-lg prose-slate");
+```
+</CodeGroup>
+
+### Brace Expansion
+
+Inline sources support brace expansion for generating multiple candidates:
+
+```css
+@source inline("bg-red-{50,100,200,300,400,500}");
+```
+
+Expands to:
+```
+bg-red-50
+bg-red-100
+bg-red-200
+bg-red-300
+bg-red-400
+bg-red-500
+```
+
+### Numeric Ranges
+
+Generate numeric sequences:
+
+```css
+@source inline("bg-red-{100..900..100}");
+```
+
+Expands to:
+```
+bg-red-100
+bg-red-200
+bg-red-300
+...
+bg-red-900
+```
+
+### Complex Expansions
+
+Combine multiple patterns:
+
+```css
+@source inline("bg-{red,blue,green}-{500,600,700}");
+```
+
+Expands to:
+```
+bg-red-500, bg-red-600, bg-red-700
+bg-blue-500, bg-blue-600, bg-blue-700  
+bg-green-500, bg-green-600, bg-green-700
+```
+
+### Negating Inline Candidates
+
+Exclude specific inline candidates:
+
+```css
+@source inline("flex grid block");
+@source not inline("grid");
+```
+
+This includes `flex` and `block` but excludes `grid`.
+
+## Path Resolution
+
+Paths are resolved relative to the CSS file's location or the configured `base` directory.
+
+### Relative Paths
+
+```css
+/* Relative to CSS file */
+@source "../components/**/*.jsx";
+@source "./templates/**/*.html";
+```
+
+### Absolute-like Paths
+
+```css
+/* From project root */
+@source "/src/**/*.ts";
+```
+
+### Base Directory
+
+When using the compile API, paths are resolved from the `base` option:
+
+```javascript
+const { sources } = await compile(
+  `@source "./src/**/*.js";`,
+  { base: '/project/root' }
+)
+
+// sources = [{ 
+//   pattern: './src/**/*.js',
+//   base: '/project/root',
+//   negated: false 
+// }]
+```
+
+## Restrictions
+
+### Top-level Only
+
+<Warning>
+  `@source` must be at the top level and cannot be nested inside other rules.
+</Warning>
+
+```css
+/* ❌ Invalid - nested */
+@media (min-width: 768px) {
+  @source "./src/**/*.js";
+}
+
+/* ✅ Valid - top level */
+@source "./src/**/*.js";
+```
+
+### No Body
+
+<Warning>
+  `@source` cannot have a body with CSS rules.
+</Warning>
+
+```css
+/* ❌ Invalid - has body */
+@source "./src/**/*.js" {
+  color: red;
+}
+
+/* ✅ Valid - no body */
+@source "./src/**/*.js";
+```
+
+## Using with @tailwind utilities
+
+The `@tailwind utilities` directive can also specify a source path:
+
+```css
+@tailwind utilities source("./src/**/*.jsx");
+```
+
+Or use `source(none)` to disable automatic scanning:
+
+```css
+@tailwind utilities source(none);
+```
+
+This is useful when you want complete control via `@source` directives:
+
+```css
+@source inline("flex grid");
+@tailwind utilities source(none);
+```
+
+## Parsing Logic
+
+From the source code (index.ts:256-307), here's how `@source` is processed:
+
+```typescript
+if (node.name === '@source') {
+  if (node.nodes.length > 0) {
+    throw new Error('`@source` cannot have a body.');
+  }
+
+  if (ctx.parent !== null) {
+    throw new Error('`@source` cannot be nested.');
+  }
+
+  let not = false;
+  let inline = false;
+  let path = node.params;
+
+  // Handle 'not' prefix
+  if (path.startsWith('not ')) {
+    not = true;
+    path = path.slice(4);
+  }
+
+  // Handle 'inline()' function
+  if (path.startsWith('inline(')) {
+    inline = true;
+    path = path.slice(7, -1).trim();
+  }
+
+  // Validate quoted path
+  if (!isQuoted(path)) {
+    throw new Error('`@source` paths must be quoted.');
+  }
+
+  let source = path.slice(1, -1);
+
+  if (inline) {
+    // Process inline candidates with brace expansion
+    let destination = not ? ignoredCandidates : inlineCandidates;
+    for (let candidate of expand(source)) {
+      destination.push(candidate);
+    }
+  } else {
+    // Add to sources array for scanning
+    sources.push({
+      base: ctx.context.base,
+      pattern: source,
+      negated: not,
+    });
+  }
+
+  // Remove @source from output
+  return WalkAction.ReplaceSkip([]);
+}
+```
+
+## Output
+
+The `@source` directive is removed from the final CSS output. It only affects which utility classes are generated:
+
+```css
+/* Input */
+@source "./src/**/*.html";
+@source inline("flex");
+
+@tailwind utilities;
+```
+
+```css
+/* Output (only if 'flex' is used) */
+.flex {
+  display: flex;
+}
+
+/* @source directives are removed */
+```
+
+## API Usage
+
+When using the JavaScript API, sources are returned:
+
+```javascript
+import { compile } from 'tailwindcss'
+
+const { sources, build } = await compile(`
+  @source "./src/**/*.tsx";
+  @source not "./src/**/*.test.tsx";
+  @tailwind utilities;
+`)
+
+console.log(sources)
+// [
+//   { pattern: './src/**/*.tsx', base: '', negated: false },
+//   { pattern: './src/**/*.test.tsx', base: '', negated: true }
+// ]
+```
+
+## Related
+
+- [Content Configuration](/docs/content-configuration) - Configure content sources
+- [@tailwind](/docs/functions-and-directives#tailwind) - Inject Tailwind styles  
+- [@theme](/api/css/at-theme) - Define theme variables

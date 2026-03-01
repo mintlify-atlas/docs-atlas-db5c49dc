@@ -1,0 +1,447 @@
+---
+title: Editor Setup
+description: Configure your editor for the best Tailwind CSS development experience with IntelliSense and plugins
+---
+
+# Editor Setup
+
+Set up your editor with IntelliSense, linting, and other helpful features to maximize your productivity when working with Tailwind CSS.
+
+## VS Code IntelliSense
+
+The official Tailwind CSS IntelliSense extension for Visual Studio Code provides autocomplete, syntax highlighting, and linting.
+
+### Installation
+
+1. Install the [Tailwind CSS IntelliSense](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss) extension from the VS Code marketplace
+2. Reload VS Code
+
+That's it! IntelliSense will automatically work in any project with Tailwind CSS installed.
+
+<Tip>
+  The extension automatically detects Tailwind CSS in your project by looking for the `tailwindcss` package in your `node_modules`.
+</Tip>
+
+### Features
+
+The IntelliSense extension provides several powerful features:
+
+#### Autocomplete
+
+Get intelligent suggestions for class names as you type:
+
+```html
+<div class="flex items-|">
+  <!-- Autocomplete suggestions appear here -->
+</div>
+```
+
+The extension suggests:
+- All available utility classes
+- Variant modifiers (hover:, focus:, md:, etc.)
+- Custom classes from your configuration
+- Color opacity modifiers
+
+#### Hover Preview
+
+Hover over any Tailwind class to see the CSS it generates:
+
+```html
+<div class="bg-blue-500">
+  <!-- Hover over bg-blue-500 to see: background-color: rgb(59 130 246); -->
+</div>
+```
+
+#### CSS Language Features
+
+IntelliSense works in CSS files with `@apply` directives:
+
+```css
+.btn {
+  @apply px-4 py-2 rounded |
+  /* Autocomplete works here */
+}
+```
+
+#### Linting
+
+The extension provides real-time linting to catch errors:
+
+- Unknown class names
+- Invalid variant combinations
+- Deprecated utilities
+- CSS conflicts
+
+<Note>
+  Linting helps you catch typos and ensures you're using valid Tailwind utilities. Enable it in your VS Code settings.
+</Note>
+
+### Configuration
+
+Customize the extension behavior in your VS Code settings:
+
+```json .vscode/settings.json
+{
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"]
+  ],
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "tailwindCSS.validate": true,
+  "tailwindCSS.lint.cssConflict": "warning",
+  "tailwindCSS.lint.invalidApply": "error",
+  "tailwindCSS.lint.invalidScreen": "error",
+  "tailwindCSS.lint.invalidVariant": "error"
+}
+```
+
+### Language Support
+
+IntelliSense works in multiple file types:
+
+- HTML
+- JSX/TSX (React)
+- Vue
+- Svelte
+- Angular templates
+- PHP
+- Twig
+- ERB
+
+For additional language support, update your settings:
+
+```json .vscode/settings.json
+{
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html"
+  }
+}
+```
+
+## Custom Class Regex
+
+If you're using Tailwind classes in non-standard ways (like with a CSS-in-JS library), configure custom regex patterns:
+
+```json .vscode/settings.json
+{
+  "tailwindCSS.experimental.classRegex": [
+    // For styled-components
+    "tw`([^`]*)",
+    "tw\"([^\"]*)",
+    "tw={'([^'}]*)",
+    "tw={\"([^\"}]*)",
+    
+    // For clsx / classnames
+    "clsx\\(([^)]*)\\)",
+    "classnames\\(([^)]*)\\)",
+    
+    // For cva (class variance authority)
+    "cva\\(([^)]*)\\)",
+    
+    // For custom functions
+    "cn\\(([^)]*)\\)"
+  ]
+}
+```
+
+<Warning>
+  Custom regex patterns should be carefully tested as incorrect patterns can cause IntelliSense to not work properly.
+</Warning>
+
+## JetBrains IDEs
+
+For WebStorm, PhpStorm, and other JetBrains IDEs:
+
+### Built-in Support
+
+JetBrains IDEs have built-in Tailwind CSS support:
+
+1. Ensure Tailwind CSS is installed in your project
+2. The IDE will automatically detect and enable Tailwind support
+
+### Features
+
+- Class name completion
+- CSS preview on hover
+- Syntax highlighting
+- Navigation to definitions
+
+### Configuration
+
+Enable or configure Tailwind support:
+
+1. Go to **Settings/Preferences → Languages & Frameworks → Style Sheets → Tailwind CSS**
+2. Check **Enable Tailwind CSS support**
+3. Configure any additional settings
+
+## Neovim
+
+For Neovim users, set up Tailwind IntelliSense with the Language Server Protocol (LSP):
+
+### Installation with nvim-lspconfig
+
+```lua init.lua
+require('lspconfig').tailwindcss.setup({
+  settings = {
+    tailwindCSS = {
+      experimental = {
+        classRegex = {
+          "tw`([^`]*)",
+          "tw\"([^\"]*)",
+          "tw={'([^'}]*)",
+          "tw={\"([^\"}]*)",
+        },
+      },
+    },
+  },
+})
+```
+
+### With LazyVim
+
+```lua
+return {
+  "neovim/nvim-lspconfig",
+  opts = {
+    servers = {
+      tailwindcss = {
+        settings = {
+          tailwindCSS = {
+            experimental = {
+              classRegex = {
+                "tw`([^`]*)",
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+}
+```
+
+<Tip>
+  The Tailwind CSS Language Server is the same one used by the VS Code extension, ensuring consistent behavior across editors.
+</Tip>
+
+## Sublime Text
+
+For Sublime Text users:
+
+1. Install [LSP](https://packagecontrol.io/packages/LSP) via Package Control
+2. Install [LSP-tailwindcss](https://packagecontrol.io/packages/LSP-tailwindcss) via Package Control
+3. Restart Sublime Text
+
+## Automatic Class Sorting
+
+Keep your classes organized automatically with Prettier:
+
+### Installation
+
+Install the official Prettier plugin:
+
+<CodeGroup>
+
+```bash npm
+npm install -D prettier prettier-plugin-tailwindcss
+```
+
+```bash yarn
+yarn add -D prettier prettier-plugin-tailwindcss
+```
+
+```bash pnpm
+pnpm add -D prettier prettier-plugin-tailwindcss
+```
+
+</CodeGroup>
+
+### Configuration
+
+Add the plugin to your Prettier config:
+
+```javascript .prettierrc.js
+module.exports = {
+  plugins: ['prettier-plugin-tailwindcss'],
+}
+```
+
+Or in `package.json`:
+
+```json package.json
+{
+  "prettier": {
+    "plugins": ["prettier-plugin-tailwindcss"]
+  }
+}
+```
+
+### How It Works
+
+The plugin automatically sorts your classes following Tailwind's recommended order:
+
+```html Before
+<div class="pt-4 text-center bg-blue-500 text-white rounded">
+```
+
+```html After
+<div class="rounded bg-blue-500 pt-4 text-center text-white">
+```
+
+The sorting order is:
+1. Layout (display, position, etc.)
+2. Box model (width, height, margin, padding)
+3. Backgrounds and borders
+4. Typography
+5. Effects (shadows, opacity)
+6. Transforms and transitions
+7. Filters
+
+<Note>
+  Consistent class ordering improves code readability and makes it easier to work in teams.
+</Note>
+
+## ESLint Integration
+
+For additional linting, integrate with ESLint:
+
+### Installation
+
+```bash Terminal
+npm install -D eslint-plugin-tailwindcss
+```
+
+### Configuration
+
+Add to your `.eslintrc.js`:
+
+```javascript .eslintrc.js
+module.exports = {
+  plugins: ['tailwindcss'],
+  rules: {
+    'tailwindcss/classnames-order': 'warn',
+    'tailwindcss/no-custom-classname': 'warn',
+    'tailwindcss/no-contradicting-classname': 'error',
+  },
+}
+```
+
+## VS Code Settings Recommendations
+
+Optimal VS Code settings for Tailwind development:
+
+```json .vscode/settings.json
+{
+  // Enable Emmet for JSX/TSX
+  "emmet.includeLanguages": {
+    "javascript": "javascriptreact",
+    "typescript": "typescriptreact"
+  },
+  
+  // Enable quick suggestions in strings
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  
+  // Format on save with Prettier
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  
+  // Tailwind IntelliSense settings
+  "tailwindCSS.emmetCompletions": true,
+  "tailwindCSS.validate": true,
+  "tailwindCSS.suggestions": true,
+  
+  // File associations
+  "files.associations": {
+    "*.css": "tailwindcss"
+  },
+  
+  // Color decorators
+  "editor.colorDecorators": true
+}
+```
+
+## Workspace Recommendations
+
+Create a `.vscode/extensions.json` file to recommend extensions to your team:
+
+```json .vscode/extensions.json
+{
+  "recommendations": [
+    "bradlc.vscode-tailwindcss",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ]
+}
+```
+
+Team members will be prompted to install these extensions when they open the project.
+
+## Troubleshooting
+
+### IntelliSense Not Working
+
+If IntelliSense isn't working:
+
+1. Verify Tailwind CSS is installed: Check that `tailwindcss` is in your `package.json` dependencies
+2. Reload VS Code: Press `Cmd/Ctrl + Shift + P` and run "Developer: Reload Window"
+3. Check the extension is enabled: Look for "Tailwind CSS IntelliSense" in your extensions list
+4. Review the output panel: Check the "Tailwind CSS IntelliSense" output for errors
+
+### Autocomplete in JSX Strings
+
+If autocomplete isn't working in JSX string literals:
+
+```json .vscode/settings.json
+{
+  "editor.quickSuggestions": {
+    "strings": "on"
+  }
+}
+```
+
+### Performance Issues
+
+For large projects, optimize IntelliSense performance:
+
+```json .vscode/settings.json
+{
+  "tailwindCSS.files.exclude": [
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/.hg/**",
+    "**/.svn/**",
+    "**/dist/**",
+    "**/build/**"
+  ]
+}
+```
+
+<Tip>
+  Tailwind CSS v4's Rust-powered engine significantly improves IntelliSense performance compared to v3.
+</Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Core Concepts"
+    icon="book"
+    href="/core-concepts/utility-first"
+  >
+    Learn about utility-first CSS and Tailwind's philosophy
+  </Card>
+  <Card
+    title="Customization"
+    icon="palette"
+    href="/customization/theme"
+  >
+    Customize your design system with theme configuration
+  </Card>
+</CardGroup>

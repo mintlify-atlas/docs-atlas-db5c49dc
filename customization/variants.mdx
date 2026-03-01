@@ -1,0 +1,408 @@
+---
+title: Variants
+description: Customize and extend variants for conditional styling
+---
+
+Variants in Tailwind CSS allow you to apply styles conditionally based on state, viewport size, or other conditions. Tailwind v4 includes a comprehensive set of built-in variants and provides APIs for creating custom ones.
+
+## Built-in Variants
+
+Tailwind includes many variants out of the box:
+
+### Pseudo-class Variants
+
+<CodeGroup>
+```html Interactive States
+<button class="hover:bg-blue-600 focus:ring-2 active:scale-95">
+  Interactive button
+</button>
+```
+
+```html Form States
+<input class="invalid:border-red-500 valid:border-green-500 disabled:opacity-50" />
+```
+
+```html Positional
+<li class="first:rounded-t last:rounded-b odd:bg-gray-100">
+  List item
+</li>
+```
+</CodeGroup>
+
+### Pseudo-element Variants
+
+```html
+<p class="first-line:uppercase first-letter:text-7xl">
+  Styled text
+</p>
+
+<div class="before:content-['→'] after:content-['←']">
+  Content with pseudo-elements
+</div>
+
+<input class="placeholder:italic placeholder:text-gray-400" placeholder="Search..." />
+```
+
+### Media Query Variants
+
+<CodeGroup>
+```html Responsive
+<div class="text-sm md:text-base lg:text-lg">
+  Responsive text
+</div>
+```
+
+```html Dark Mode
+<div class="bg-white dark:bg-gray-900 text-black dark:text-white">
+  Dark mode support
+</div>
+```
+
+```html Reduced Motion
+<div class="motion-safe:animate-bounce motion-reduce:animate-none">
+  Respects motion preferences
+</div>
+```
+</CodeGroup>
+
+## Variant Categories
+
+### State Variants
+
+<ParamField path="hover" type="pseudo-class">
+  Applied on hover (with `@media (hover: hover)` wrapper)
+  ```html
+  <button class="hover:bg-blue-600">Hover me</button>
+  ```
+</ParamField>
+
+<ParamField path="focus" type="pseudo-class">
+  Applied when element has focus
+  ```html
+  <input class="focus:ring-2 focus:ring-blue-500" />
+  ```
+</ParamField>
+
+<ParamField path="active" type="pseudo-class">
+  Applied when element is being activated
+  ```html
+  <button class="active:scale-95">Press me</button>
+  ```
+</ParamField>
+
+<ParamField path="visited" type="pseudo-class">
+  Applied to visited links
+  ```html
+  <a class="visited:text-purple-600">Link</a>
+  ```
+</ParamField>
+
+<ParamField path="disabled" type="pseudo-class">
+  Applied when element is disabled
+  ```html
+  <button class="disabled:opacity-50" disabled>Disabled</button>
+  ```
+</ParamField>
+
+### Form Variants
+
+```html
+<!-- Validation states -->
+<input class="valid:border-green-500 invalid:border-red-500" />
+
+<!-- Checked states -->
+<input type="checkbox" class="checked:bg-blue-600" />
+
+<!-- Indeterminate state -->
+<input type="checkbox" class="indeterminate:bg-gray-600" />
+
+<!-- Required/Optional -->
+<input class="required:border-red-500 optional:border-gray-300" />
+```
+
+### Positional Variants
+
+```html
+<ul>
+  <li class="first:pt-0">First item</li>
+  <li class="last:pb-0">Last item</li>
+  <li class="only:border-0">Only item</li>
+  <li class="odd:bg-gray-100">Odd items</li>
+  <li class="even:bg-white">Even items</li>
+</ul>
+```
+
+### Group & Peer Variants
+
+Apply styles based on parent or sibling state:
+
+<CodeGroup>
+```html Group
+<div class="group">
+  <img class="group-hover:opacity-75" />
+  <h3 class="group-hover:text-blue-600">Title</h3>
+</div>
+```
+
+```html Peer
+<input type="checkbox" class="peer" />
+<label class="peer-checked:text-blue-600">
+  This label changes when checkbox is checked
+</label>
+```
+</CodeGroup>
+
+### Responsive Variants
+
+The default breakpoints:
+
+```ts
+--breakpoint-sm: 40rem   /* 640px */
+--breakpoint-md: 48rem   /* 768px */
+--breakpoint-lg: 64rem   /* 1024px */
+--breakpoint-xl: 80rem   /* 1280px */
+--breakpoint-2xl: 96rem  /* 1536px */
+```
+
+Usage:
+
+```html
+<div class="text-sm sm:text-base md:text-lg lg:text-xl">
+  Responsive sizing
+</div>
+```
+
+## Custom Variants with Plugins
+
+Create custom variants using the plugin API:
+
+### Static Variant
+
+Add a simple static variant:
+
+```ts tailwind.config.ts
+import type { Config } from 'tailwindcss'
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ addVariant }) => {
+      // Add a `third` variant
+      addVariant('third', '&:nth-child(3)')
+      
+      // Add a `hocus` variant (hover or focus)
+      addVariant('hocus', ['&:hover', '&:focus'])
+      
+      // Add an `optional` variant for optional form elements
+      addVariant('optional', '&:optional')
+      
+      // Add a `supports-grid` variant
+      addVariant('supports-grid', '@supports (display: grid)')
+    }),
+  ],
+} satisfies Config
+```
+
+Usage:
+
+```html
+<div class="third:bg-blue-500">Third child is blue</div>
+<button class="hocus:ring-2">Hover or focus for ring</button>
+```
+
+### Functional Variant
+
+Create variants that accept values:
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ matchVariant }) => {
+      // Add an `nth` variant
+      matchVariant(
+        'nth',
+        (value) => `&:nth-child(${value})`,
+      )
+      
+      // Add a `data` variant with values
+      matchVariant(
+        'data',
+        (value) => `&[data-${value}]`,
+        {
+          values: {
+            checked: 'checked',
+            active: 'active',
+            disabled: 'disabled',
+          },
+        },
+      )
+    }),
+  ],
+}
+```
+
+Usage:
+
+```html
+<div class="nth-3:bg-blue-500">Third child</div>
+<div class="nth-[2n]:bg-gray-100">Even children</div>
+<div class="data-active:bg-green-500" data-active>Active state</div>
+```
+
+### Compound Variants
+
+Create variants that modify other variants:
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ addVariant }) => {
+      // Add a custom group variant
+      addVariant('group-optional', ':merge(.group):optional &')
+      
+      // Add a custom peer variant  
+      addVariant('peer-optional', ':merge(.peer):optional ~ &')
+    }),
+  ],
+}
+```
+
+## Functional Variants
+
+Some variants accept arbitrary values:
+
+<CodeGroup>
+```html nth
+<div class="nth-3:bg-blue-500">3rd child</div>
+<div class="nth-[2n+1]:bg-gray-100">Odd children</div>
+```
+
+```html data
+<div class="data-[state=active]:bg-green-500">Active</div>
+```
+
+```html aria
+<div class="aria-[pressed=true]:bg-blue-600">Pressed</div>
+```
+
+```html supports
+<div class="supports-[display:grid]:grid">Grid if supported</div>
+```
+</CodeGroup>
+
+## Stacking Variants
+
+Combine multiple variants:
+
+```html
+<!-- Responsive + hover -->
+<button class="md:hover:bg-blue-600">Desktop hover</button>
+
+<!-- Dark mode + hover + focus -->
+<button class="dark:hover:focus:ring-4">Complex state</button>
+
+<!-- Group + responsive + hover -->
+<div class="group-hover:md:scale-110">Scales on group hover (desktop)</div>
+```
+
+## Variant Order
+
+Variants are applied in a specific order (roughly):
+
+1. Responsive variants (`sm:`, `md:`, etc.)
+2. State variants (`hover:`, `focus:`, etc.)
+3. Compound variants (`group-*:`, `peer-*:`)
+4. Pseudo-elements (`before:`, `after:`, etc.)
+
+<Note>
+The order of variants in your class name doesn't matter - Tailwind handles ordering automatically based on CSS specificity rules.
+</Note>
+
+## Advanced Variant Examples
+
+### Custom Dark Mode
+
+Implement a custom dark mode strategy:
+
+```ts
+export default {
+  darkMode: ['variant', '&:is(.dark *)'],
+}
+```
+
+### RTL Support
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ addVariant }) => {
+      addVariant('rtl', '&:is([dir="rtl"] *)')
+      addVariant('ltr', '&:is([dir="ltr"] *)')
+    }),
+  ],
+}
+```
+
+Usage:
+
+```html
+<div class="ml-4 rtl:mr-4 rtl:ml-0">
+  RTL-aware margin
+</div>
+```
+
+### Container Queries
+
+Use container query variants:
+
+```html
+<div class="@container">
+  <div class="@md:text-lg @lg:text-xl">
+    Responsive to container size
+  </div>
+</div>
+```
+
+## Not Variant
+
+Negate other variants:
+
+```html
+<div class="not-first:mt-4">Margin except first</div>
+<div class="not-last:border-b">Border except last</div>
+<div class="not-hover:opacity-75">Opacity when not hovered</div>
+```
+
+## Variant Modifiers
+
+Some variants support modifiers:
+
+```html
+<!-- Named group -->
+<div class="group/card">
+  <div class="group-hover/card:opacity-100">
+    Only affected by .group/card
+  </div>
+</div>
+
+<!-- Named peer -->
+<input class="peer/email" type="email" />
+<span class="peer-invalid/email:visible">Invalid email</span>
+```
+
+## Best Practices
+
+1. **Use semantic variants** - `hover:`, `focus:`, etc. are more maintainable than arbitrary selectors
+2. **Leverage responsive variants** - Build mobile-first with progressive enhancement
+3. **Group related states** - Use `group` and `peer` for parent/sibling relationships
+4. **Be mindful of specificity** - More variants = higher specificity
+
+<Warning>
+Stacking too many variants can create overly specific selectors that are hard to override. Consider extracting complex variant combinations into component classes.
+</Warning>

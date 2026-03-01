@@ -1,0 +1,227 @@
+---
+title: Configuration File
+description: Set up and configure your Tailwind CSS project with JavaScript configuration files
+---
+
+Tailwind CSS v4 uses a JavaScript configuration file for advanced customization beyond what's possible with `@theme` in CSS. The configuration file allows you to define content sources, plugins, presets, and more.
+
+## Basic Configuration
+
+Create a `tailwind.config.js` or `tailwind.config.ts` file in your project root:
+
+```ts tailwind.config.ts
+import type { Config } from 'tailwindcss'
+
+export default {
+  content: ['./src/**/*.{html,js,jsx,ts,tsx}'],
+} satisfies Config
+```
+
+## Configuration Options
+
+### Content
+
+Define which files Tailwind should scan for class names:
+
+<CodeGroup>
+```ts Array Format
+export default {
+  content: [
+    './src/**/*.{html,js,jsx,ts,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
+  ],
+}
+```
+
+```ts Object Format
+export default {
+  content: {
+    relative: true,
+    files: [
+      './src/**/*.{html,js,jsx,ts,tsx}',
+      { raw: '<div class="text-center"></div>', extension: 'html' },
+    ],
+  },
+}
+```
+</CodeGroup>
+
+<ParamField path="content" type="string[] | ContentConfig">
+  Files to scan for utility class usage
+  
+  <Accordion title="ContentConfig Properties">
+    <ParamField path="files" type="(string | { raw: string, extension?: string })[]" required>
+      Array of file paths or raw content objects
+    </ParamField>
+    <ParamField path="relative" type="boolean">
+      Whether to use relative paths from the config file (default: false)
+    </ParamField>
+  </Accordion>
+</ParamField>
+
+### Dark Mode
+
+Configure how dark mode is handled:
+
+```ts
+export default {
+  // No dark mode support
+  darkMode: false,
+  
+  // Use media query strategy
+  darkMode: 'media',
+  
+  // Use class strategy (requires .dark on html element)
+  darkMode: 'class',
+  
+  // Use class strategy with custom class
+  darkMode: ['class', '.dark-mode'],
+  
+  // Use selector strategy (more predictable with :where())
+  darkMode: 'selector',
+  
+  // Use custom selector
+  darkMode: ['selector', '[data-theme="dark"]'],
+  
+  // Use variant strategy for complete control
+  darkMode: ['variant', '&:is(.dark *)'],
+}
+```
+
+<ParamField path="darkMode" type="DarkModeStrategy">
+  Controls dark mode implementation strategy
+  
+  **Strategies:**
+  - `false` - No dark mode support
+  - `'media'` - Use `@media (prefers-color-scheme: dark)`
+  - `'class'` - Requires `.dark` class on `html` element
+  - `['class', string]` - Custom class name
+  - `'selector'` - Like `class` but uses `:where()` for specificity control
+  - `['selector', string]` - Custom selector
+  - `['variant', string | string[]]` - Complete custom control
+</ParamField>
+
+### Prefix
+
+Add a prefix to all utility classes:
+
+```ts
+export default {
+  prefix: 'tw-',
+}
+```
+
+This generates classes like `tw-flex`, `tw-pt-4`, etc.
+
+<ParamField path="prefix" type="string">
+  Prefix to add to all generated utility classes
+</ParamField>
+
+### Important
+
+Make all utilities `!important` or scope them to a selector:
+
+<CodeGroup>
+```ts Boolean
+export default {
+  important: true,
+}
+```
+
+```ts Selector
+export default {
+  important: '#app',
+}
+```
+</CodeGroup>
+
+<ParamField path="important" type="boolean | string">
+  Add `!important` to all utilities or scope to a selector
+</ParamField>
+
+### Blocklist
+
+Prevent specific utilities from being generated:
+
+```ts
+export default {
+  blocklist: ['container', 'collapse'],
+}
+```
+
+<ParamField path="blocklist" type="string[]">
+  Array of utility names to exclude from generation
+</ParamField>
+
+## Presets
+
+Extend or override configuration from another config:
+
+```ts
+import baseConfig from './tailwind.base.config'
+
+export default {
+  presets: [baseConfig],
+  theme: {
+    extend: {
+      // Your overrides
+    },
+  },
+}
+```
+
+<Note>
+Presets are processed first, and each subsequent config can override values from previous ones. The preset system allows for shareable configuration packages.
+</Note>
+
+## TypeScript Support
+
+The config file has full TypeScript support:
+
+```ts tailwind.config.ts
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: ['./src/**/*.{ts,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        brand: '#3b82f6',
+      },
+    },
+  },
+}
+
+export default config
+```
+
+## Complete Example
+
+```ts tailwind.config.ts
+import type { Config } from 'tailwindcss'
+import forms from '@tailwindcss/forms'
+import typography from '@tailwindcss/typography'
+
+export default {
+  content: [
+    './src/**/*.{html,js,jsx,ts,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
+  ],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          50: '#eff6ff',
+          500: '#3b82f6',
+          900: '#1e3a8a',
+        },
+      },
+      spacing: {
+        '128': '32rem',
+      },
+    },
+  },
+  plugins: [forms, typography],
+} satisfies Config
+```

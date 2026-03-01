@@ -1,0 +1,373 @@
+---
+title: '@utility'
+description: Create custom utility classes with the @utility directive
+---
+
+The `@utility` directive allows you to define custom utility classes that integrate seamlessly with Tailwind CSS. These utilities can be applied using regular class names or with `@apply`.
+
+## Syntax
+
+```css
+@utility utility-name {
+  /* CSS declarations */
+}
+```
+
+## Basic Usage
+
+### Static Utilities
+
+Create a simple static utility that always generates the same CSS:
+
+```css
+@utility center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+```
+
+Use it like any built-in utility:
+
+```html
+<div class="center">
+  <!-- Content is centered -->
+</div>
+```
+
+Or with `@apply`:
+
+```css
+.card {
+  @apply center;
+}
+```
+
+### Functional Utilities
+
+Create utilities that accept a value using the `-*` suffix:
+
+```css
+@utility glow-* {
+  box-shadow: 0 0 20px 5px var(--value);
+}
+```
+
+The `--value` variable is automatically replaced with the utility value:
+
+```html
+<!-- Generates: box-shadow: 0 0 20px 5px #3b82f6; -->
+<div class="glow-[#3b82f6]">
+  Glowing element
+</div>
+```
+
+You can also use theme values:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+}
+
+@utility glow-* {
+  box-shadow: 0 0 20px 5px var(--value);
+}
+```
+
+```html
+<!-- Uses theme value --color-primary -->
+<div class="glow-primary">
+  Glowing element
+</div>
+```
+
+## Utility Naming Rules
+
+<ParamField path="Static Utilities" type="string">
+  Must be alphanumeric, start with a lowercase letter, and can contain hyphens:
+
+  ```css
+  ✅ @utility my-utility { }
+  ✅ @utility btn { }
+  ✅ @utility flex-center { }
+  ❌ @utility MyUtility { }  /* uppercase */
+  ❌ @utility _utility { }   /* underscore start */
+  ❌ @utility -utility { }   /* hyphen start */
+  ```
+</ParamField>
+
+<ParamField path="Functional Utilities" type="string">
+  Must end with `-*` and follow the same naming rules:
+
+  ```css
+  ✅ @utility glow-* { }
+  ✅ @utility custom-spacing-* { }
+  ❌ @utility glow* { }       /* missing hyphen */
+  ❌ @utility *glow { }       /* wrong position */
+  ❌ @utility glow-*-more { } /* * not at end */
+  ```
+</ParamField>
+
+## Using CSS Variables
+
+### The --value Variable
+
+For functional utilities, `--value` represents the user-provided value:
+
+```css
+@utility ring-* {
+  box-shadow: 0 0 0 var(--value) rgb(59 130 246 / 0.5);
+}
+```
+
+```html
+<!-- Generates: box-shadow: 0 0 0 3px rgb(59 130 246 / 0.5); -->
+<div class="ring-[3px]"></div>
+```
+
+### Referencing Theme Variables
+
+You can reference theme variables using `var()`:
+
+```css
+@theme {
+  --color-brand: #ff6b6b;
+  --radius: 0.5rem;
+}
+
+@utility card {
+  background: var(--color-brand);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+```
+
+## Nested Rules
+
+Utilities can contain nested rules using the `&` selector:
+
+```css
+@utility btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+```
+
+Generated HTML class:
+
+```html
+<button class="btn">Click me</button>
+```
+
+Generated CSS:
+
+```css
+.btn {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+.btn:hover {
+  opacity: 0.8;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+```
+
+## Pseudo-elements
+
+Create utilities with pseudo-elements:
+
+```css
+@utility tooltip {
+  position: relative;
+
+  &::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0.25rem 0.5rem;
+    background: black;
+    color: white;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+}
+```
+
+## Using @apply in Utilities
+
+You can use `@apply` within custom utilities:
+
+```css
+@utility my-flex {
+  @apply flex items-center justify-center;
+}
+
+@utility card {
+  @apply my-flex;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+```
+
+<Note>
+  Utilities defined with `@utility` are available to `@apply` even before they are defined in the source order.
+</Note>
+
+## Recursive Application
+
+Utilities can recursively apply other custom utilities:
+
+```css
+@utility a {
+  @apply b;
+}
+
+@utility b {
+  @apply focus:c;
+}
+
+@utility c {
+  @apply flex!;
+}
+```
+
+## At-Rules and Media Queries
+
+Include media queries and other at-rules:
+
+```css
+@utility responsive-text {
+  font-size: 1rem;
+
+  @media (min-width: 768px) {
+    font-size: 1.25rem;
+  }
+
+  @media (min-width: 1024px) {
+    font-size: 1.5rem;
+  }
+}
+```
+
+## Restrictions
+
+<Warning>
+  The `@utility` directive must be used at the top level and cannot be nested inside other rules.
+</Warning>
+
+```css
+/* ❌ Invalid - nested utility */
+.container {
+  @utility my-utility {
+    color: red;
+  }
+}
+
+/* ✅ Valid - top-level utility */
+@utility my-utility {
+  color: red;
+}
+```
+
+<Warning>
+  Custom utilities must include at least one CSS property. Empty utilities are not allowed.
+</Warning>
+
+```css
+/* ❌ Invalid - empty utility */
+@utility empty {
+}
+
+/* ✅ Valid - has properties */
+@utility valid {
+  display: block;
+}
+```
+
+## Parsing and Processing
+
+When you define a utility with `@utility`, the parser:
+
+1. **Validates the utility name** according to naming rules
+2. **Checks for the `-*` suffix** to determine if it's functional
+3. **Extracts the CSS declarations** from the body
+4. **Registers the utility** in the design system
+5. **Makes it available** to `@apply` and class names
+6. **Removes the `@utility` rule** from the final CSS
+
+From the source code (index.ts:222-254):
+
+```typescript
+if (node.name === '@utility') {
+  if (ctx.parent !== null) {
+    throw new Error('`@utility` cannot be nested.');
+  }
+
+  if (node.nodes.length === 0) {
+    throw new Error(
+      `@utility ${node.params} is empty. Utilities should include at least one property.`
+    );
+  }
+
+  let utility = createCssUtility(node);
+  if (utility === null) {
+    // Validation errors for invalid utility names
+  }
+
+  customUtilities.push(utility);
+}
+```
+
+## Output
+
+The `@utility` directive itself does not appear in the final CSS. Only the generated utility classes are output when used:
+
+```css
+/* Input */
+@utility center {
+  display: flex;
+  align-items: center;
+}
+
+@tailwind utilities;
+```
+
+```html
+<!-- Used in HTML -->
+<div class="center"></div>
+```
+
+```css
+/* Output */
+.center {
+  display: flex;
+  align-items: center;
+}
+```
+
+## Related
+
+- [@apply](/docs/functions-and-directives#apply) - Apply utilities in CSS
+- [@theme](/api/css/at-theme) - Define theme variables
+- [@variant](/api/css/at-variant) - Create custom variants

@@ -1,0 +1,416 @@
+---
+title: 'Base & Components'
+description: 'Add global base styles and reusable component classes with addBase() and addComponents()'
+---
+
+## addBase()
+
+Add base styles to the `@layer base` layer. Base styles are applied globally before utilities and components.
+
+<ParamField path="base" type="CssInJs" required>
+  CSS-in-JS object containing base styles for HTML elements
+</ParamField>
+
+### Basic Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addBase }) {
+  addBase({
+    'h1': {
+      fontSize: '2.5rem',
+      fontWeight: '700'
+    },
+    'h2': {
+      fontSize: '2rem',
+      fontWeight: '600'
+    },
+    'h3': {
+      fontSize: '1.5rem',
+      fontWeight: '600'
+    }
+  })
+})
+```
+
+Compiles to:
+
+```css
+@layer base {
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+  h2 {
+    font-size: 2rem;
+    font-weight: 600;
+  }
+  h3 {
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+```
+
+### Reset Styles
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addBase }) {
+  addBase({
+    '*, ::before, ::after': {
+      boxSizing: 'border-box',
+      borderWidth: '0',
+      borderStyle: 'solid'
+    },
+    html: {
+      lineHeight: '1.5',
+      WebkitTextSizeAdjust: '100%'
+    },
+    body: {
+      margin: '0',
+      padding: '0'
+    }
+  })
+})
+```
+
+### Using Theme Values
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addBase, theme }) {
+  addBase({
+    'h1': {
+      fontSize: theme('fontSize.5xl'),
+      color: theme('colors.gray.900')
+    },
+    'a': {
+      color: theme('colors.blue.600'),
+      '&:hover': {
+        color: theme('colors.blue.800')
+      }
+    }
+  })
+})
+```
+
+### Custom Fonts
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addBase }) {
+  addBase({
+    '@font-face': {
+      fontFamily: 'Inter',
+      fontWeight: '400',
+      src: 'url("/fonts/inter-regular.woff2") format("woff2")'
+    },
+    'body': {
+      fontFamily: 'Inter, system-ui, sans-serif'
+    }
+  })
+})
+```
+
+### Multiple @font-face Declarations
+
+```javascript
+addBase({
+  '@font-face': [
+    {
+      fontFamily: 'Inter',
+      fontWeight: '400',
+      src: 'url("/fonts/inter-regular.woff2") format("woff2")'
+    },
+    {
+      fontFamily: 'Inter',
+      fontWeight: '700',
+      src: 'url("/fonts/inter-bold.woff2") format("woff2")'
+    }
+  ]
+})
+```
+
+### Keyframes from Theme
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(
+  function({ addBase, theme }) {
+    addBase({
+      '@keyframes enter': theme('keyframes.enter'),
+      '@keyframes exit': theme('keyframes.exit')
+    })
+  },
+  {
+    theme: {
+      extend: {
+        keyframes: {
+          enter: {
+            from: {
+              opacity: 'var(--tw-enter-opacity, 1)',
+              transform: 'translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1)) rotate(var(--tw-enter-rotate, 0))'
+            }
+          },
+          exit: {
+            to: {
+              opacity: 'var(--tw-exit-opacity, 1)',
+              transform: 'translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0) scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1)) rotate(var(--tw-exit-rotate, 0))'
+            }
+          }
+        }
+      }
+    }
+  }
+)
+```
+
+### Normalize Lists
+
+```javascript
+addBase({
+  'ul, ol': {
+    listStyle: 'none',
+    margin: '0',
+    padding: '0'
+  }
+})
+```
+
+## addComponents()
+
+Add component styles. This is an alias for `addUtilities()` with the same behavior.
+
+<ParamField path="components" type="Record<string, CssInJs> | Record<string, CssInJs>[]" required>
+  CSS-in-JS object containing component class definitions
+</ParamField>
+
+<ParamField path="options" type="object">
+  Optional configuration (reserved for future use)
+</ParamField>
+
+### Basic Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addComponents }) {
+  addComponents({
+    '.btn': {
+      padding: '.5rem 1rem',
+      borderRadius: '.375rem',
+      fontWeight: '600'
+    },
+    '.btn-primary': {
+      backgroundColor: '#3b82f6',
+      color: '#ffffff',
+      '&:hover': {
+        backgroundColor: '#2563eb'
+      }
+    },
+    '.btn-secondary': {
+      backgroundColor: '#6b7280',
+      color: '#ffffff',
+      '&:hover': {
+        backgroundColor: '#4b5563'
+      }
+    }
+  })
+})
+```
+
+```html
+<button class="btn btn-primary">
+  Primary Button
+</button>
+<button class="btn btn-secondary">
+  Secondary Button
+</button>
+```
+
+### Card Component
+
+```javascript
+addComponents({
+  '.card': {
+    backgroundColor: '#ffffff',
+    borderRadius: '.5rem',
+    padding: '1.5rem',
+    boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1)'
+  },
+  '.card-title': {
+    fontSize: '1.25rem',
+    fontWeight: '600',
+    marginBottom: '.5rem'
+  },
+  '.card-body': {
+    color: '#6b7280'
+  }
+})
+```
+
+### Using Theme Values
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addComponents, theme }) {
+  addComponents({
+    '.btn': {
+      padding: `${theme('spacing.2')} ${theme('spacing.4')}`,
+      borderRadius: theme('borderRadius.md'),
+      fontWeight: theme('fontWeight.semibold')
+    },
+    '.btn-blue': {
+      backgroundColor: theme('colors.blue.500'),
+      color: theme('colors.white'),
+      '&:hover': {
+        backgroundColor: theme('colors.blue.700')
+      }
+    }
+  })
+})
+```
+
+### Array of Components
+
+```javascript
+addComponents([
+  {
+    '.container': {
+      width: '100%'
+    }
+  },
+  {
+    '@media (min-width: 640px)': {
+      '.container': {
+        maxWidth: '640px'
+      }
+    }
+  },
+  {
+    '@media (min-width: 768px)': {
+      '.container': {
+        maxWidth: '768px'
+      }
+    }
+  }
+])
+```
+
+### Form Components
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addComponents, theme }) {
+  addComponents({
+    '.form-input': {
+      borderWidth: '1px',
+      borderColor: theme('colors.gray.300'),
+      borderRadius: theme('borderRadius.md'),
+      padding: `${theme('spacing.2')} ${theme('spacing.3')}`,
+      '&:focus': {
+        outline: 'none',
+        borderColor: theme('colors.blue.500'),
+        boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+      }
+    },
+    '.form-select': {
+      borderWidth: '1px',
+      borderColor: theme('colors.gray.300'),
+      borderRadius: theme('borderRadius.md'),
+      padding: `${theme('spacing.2')} ${theme('spacing.3')}`,
+      '&:focus': {
+        outline: 'none',
+        borderColor: theme('colors.blue.500')
+      }
+    },
+    '.form-checkbox': {
+      borderRadius: theme('borderRadius.sm'),
+      borderWidth: '1px',
+      borderColor: theme('colors.gray.300')
+    }
+  })
+})
+```
+
+## matchComponents()
+
+Register dynamic components. This is an alias for `matchUtilities()` with the same behavior.
+
+<ParamField path="components" type="Record<string, (value: string, extra: { modifier: string | null }) => CssInJs>" required>
+  Object mapping component names to functions that return CSS styles
+</ParamField>
+
+<ParamField path="options" type="object">
+  Configuration for values, types, and modifiers (same as matchUtilities)
+</ParamField>
+
+### Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ matchComponents, theme }) {
+  matchComponents(
+    {
+      'btn': (value) => ({
+        backgroundColor: value,
+        color: '#ffffff',
+        padding: '.5rem 1rem',
+        borderRadius: '.375rem',
+        '&:hover': {
+          opacity: '0.9'
+        }
+      })
+    },
+    {
+      type: 'color',
+      values: theme('colors')
+    }
+  )
+})
+```
+
+```html
+<button class="btn-blue-500">Blue Button</button>
+<button class="btn-red-500">Red Button</button>
+<button class="btn-[#1fb6ff]">Custom Color</button>
+```
+
+## Base vs Components vs Utilities
+
+| Layer | Purpose | Examples |
+|-------|---------|----------|
+| **Base** | Global HTML element styles | `body`, `h1`, `a`, `@font-face` |
+| **Components** | Reusable component classes | `.btn`, `.card`, `.form-input` |
+| **Utilities** | Single-purpose utility classes | `.scrollbar-none`, `.text-shadow` |
+
+### Choosing the Right Layer
+
+- Use **addBase** for:
+  - Element resets and normalizations
+  - Default typography styles
+  - Font declarations
+  - Global keyframe animations
+
+- Use **addComponents** for:
+  - Complex UI patterns
+  - Pre-composed styles
+  - Third-party integrations
+
+- Use **addUtilities** for:
+  - Single-purpose classes
+  - Property-value mappings
+  - Missing CSS properties
+
+<Note>
+  Base styles are not affected by variants (hover, focus, etc.). Use components or utilities if you need variant support.
+</Note>

@@ -1,0 +1,325 @@
+---
+title: Color Customization
+description: Customize color palettes using modern color spaces and the @theme directive
+---
+
+Tailwind CSS v4 provides a comprehensive default color palette using OKLCH color space, and offers flexible ways to customize colors for your design system.
+
+## Default Color Palette
+
+Tailwind includes these color families by default:
+
+<CodeGroup>
+```css Grays
+--color-slate-50 through --color-slate-950
+--color-gray-50 through --color-gray-950
+--color-zinc-50 through --color-zinc-950
+--color-neutral-50 through --color-neutral-950
+--color-stone-50 through --color-stone-950
+```
+
+```css Colors
+--color-red-50 through --color-red-950
+--color-orange-50 through --color-orange-950
+--color-amber-50 through --color-amber-950
+--color-yellow-50 through --color-yellow-950
+--color-lime-50 through --color-lime-950
+--color-green-50 through --color-green-950
+--color-emerald-50 through --color-emerald-950
+--color-teal-50 through --color-teal-950
+--color-cyan-50 through --color-cyan-950
+--color-sky-50 through --color-sky-950
+--color-blue-50 through --color-blue-950
+--color-indigo-50 through --color-indigo-950
+--color-violet-50 through --color-violet-950
+--color-purple-50 through --color-purple-950
+--color-fuchsia-50 through --color-fuchsia-950
+--color-pink-50 through --color-pink-950
+--color-rose-50 through --color-rose-950
+```
+</CodeGroup>
+
+## Color Examples
+
+Here are some colors from the default palette:
+
+```css
+/* Slate */
+--color-slate-50: oklch(98.4% 0.003 247.858);
+--color-slate-500: oklch(55.4% 0.046 257.417);
+--color-slate-950: oklch(12.9% 0.042 264.695);
+
+/* Blue */
+--color-blue-50: oklch(97% 0.014 254.604);
+--color-blue-500: oklch(62.3% 0.214 259.815);
+--color-blue-950: oklch(28.2% 0.091 267.935);
+
+/* Rose */
+--color-rose-50: oklch(96.9% 0.015 12.422);
+--color-rose-500: oklch(64.5% 0.246 16.439);
+--color-rose-950: oklch(27.1% 0.105 12.094);
+```
+
+## Adding Custom Colors
+
+Define custom colors using the `@theme` directive:
+
+<CodeGroup>
+```css Single Color
+@theme {
+  --color-brand: #3b82f6;
+}
+```
+
+```css Color Scale
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-brand-950: #172554;
+}
+```
+
+```css OKLCH Colors
+@theme {
+  --color-primary: oklch(0.6 0.25 250);
+  --color-secondary: oklch(0.7 0.15 150);
+  --color-accent: oklch(0.65 0.30 30);
+}
+```
+</CodeGroup>
+
+## Using Custom Colors
+
+Once defined, custom colors work with all color utilities:
+
+```html
+<!-- Background colors -->
+<div class="bg-brand-500">Blue background</div>
+
+<!-- Text colors -->
+<p class="text-primary">Primary text</p>
+
+<!-- Border colors -->
+<div class="border-2 border-accent">Accent border</div>
+
+<!-- With opacity modifier -->
+<div class="bg-brand-500/50">50% opacity</div>
+```
+
+## Color Formats
+
+Tailwind supports multiple color formats:
+
+<CodeGroup>
+```css Hex
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+}
+```
+
+```css RGB
+@theme {
+  --color-primary: rgb(59 130 246);
+  --color-secondary: rgb(139 92 246);
+}
+```
+
+```css HSL
+@theme {
+  --color-primary: hsl(217 91% 60%);
+  --color-secondary: hsl(258 90% 66%);
+}
+```
+
+```css OKLCH (Recommended)
+@theme {
+  --color-primary: oklch(0.62 0.21 260);
+  --color-secondary: oklch(0.67 0.25 303);
+}
+```
+</CodeGroup>
+
+<Note>
+OKLCH is recommended for its perceptual uniformity and wider color gamut. Colors defined in OKLCH will look more consistent across different shades.
+</Note>
+
+## Opacity Modifiers
+
+All colors support opacity modifiers out of the box:
+
+```html
+<!-- Using percentage -->
+<div class="bg-blue-500/50">50% opacity</div>
+<div class="bg-blue-500/25">25% opacity</div>
+<div class="bg-blue-500/75">75% opacity</div>
+
+<!-- Arbitrary opacity -->
+<div class="bg-blue-500/[0.37]">37% opacity</div>
+```
+
+## Special Colors
+
+Tailwind provides special color keywords:
+
+```css
+@theme {
+  --color-inherit: inherit;
+  --color-current: currentcolor;
+  --color-transparent: transparent;
+  --color-black: #000;
+  --color-white: #fff;
+}
+```
+
+Usage:
+
+```html
+<div class="bg-transparent">Transparent background</div>
+<div class="text-current">Inherits text color</div>
+<div class="border-inherit">Inherits border color</div>
+```
+
+## JavaScript Configuration
+
+Define colors in your configuration file:
+
+```ts tailwind.config.ts
+import colors from 'tailwindcss/colors'
+
+export default {
+  theme: {
+    colors: {
+      // Use default colors
+      gray: colors.gray,
+      blue: colors.blue,
+      
+      // Custom colors
+      primary: {
+        50: '#eff6ff',
+        100: '#dbeafe',
+        500: '#3b82f6',
+        900: '#1e3a8a',
+      },
+    },
+    extend: {
+      colors: {
+        // Add to default palette
+        brand: '#3b82f6',
+      },
+    },
+  },
+}
+```
+
+## Importing Default Colors
+
+Use the default color palette in your config:
+
+```ts
+import colors from 'tailwindcss/colors'
+
+export default {
+  theme: {
+    extend: {
+      colors: {
+        // Include specific color scales
+        gray: colors.gray,
+        blue: colors.blue,
+        green: colors.green,
+        
+        // Alias a color
+        primary: colors.blue,
+        secondary: colors.purple,
+      },
+    },
+  },
+}
+```
+
+## Dynamic Colors with CSS Variables
+
+Create dynamic themes using CSS variables:
+
+```css
+@theme {
+  --color-primary: light-dark(
+    oklch(0.6 0.25 250),
+    oklch(0.7 0.15 250)
+  );
+}
+
+/* Or define variables separately */
+:root {
+  --primary-h: 250;
+  --primary-s: 0.25;
+  --primary-l: 0.6;
+}
+
+@theme {
+  --color-primary: oklch(var(--primary-l) var(--primary-s) var(--primary-h));
+}
+```
+
+## Color Utilities
+
+These utilities accept color values:
+
+- **Text**: `text-{color}`
+- **Background**: `bg-{color}`
+- **Border**: `border-{color}`
+- **Outline**: `outline-{color}`
+- **Ring**: `ring-{color}`
+- **Shadow**: `shadow-{color}`
+- **Accent**: `accent-{color}`
+- **Caret**: `caret-{color}`
+- **Fill**: `fill-{color}`
+- **Stroke**: `stroke-{color}`
+- **Decoration**: `decoration-{color}`
+- **Divide**: `divide-{color}`
+- **Placeholder**: `placeholder-{color}`
+
+## Removing Colors
+
+Remove default colors:
+
+```css
+@theme {
+  /* Remove all colors */
+  --color-*: initial;
+  
+  /* Remove specific color scale */
+  --color-red-*: initial;
+}
+```
+
+<Warning>
+Removing all colors with `--color-*: initial` will remove even the special colors like `transparent`, `current`, `black`, and `white`. Make sure to redefine any colors you need.
+</Warning>
+
+## Color Function
+
+Access colors in your configuration:
+
+```ts
+export default {
+  theme: {
+    extend: {
+      backgroundColor: ({ theme }) => ({
+        'primary-light': theme('colors.primary.100'),
+      }),
+      borderColor: ({ theme }) => ({
+        DEFAULT: theme('colors.gray.300'),
+      }),
+    },
+  },
+}
+```

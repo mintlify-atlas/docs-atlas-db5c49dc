@@ -1,0 +1,304 @@
+---
+title: 'Utilities'
+description: 'Register static and dynamic utility classes with addUtilities() and matchUtilities()'
+---
+
+## addUtilities()
+
+Register static utility classes that don't accept values.
+
+<ParamField path="utilities" type="Record<string, CssInJs> | Record<string, CssInJs>[]" required>
+  Object mapping class selectors to CSS-in-JS style definitions. Can be a single object or array of objects.
+</ParamField>
+
+<ParamField path="options" type="object">
+  Optional configuration (reserved for future use)
+</ParamField>
+
+### Basic Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addUtilities }) {
+  addUtilities({
+    '.scrollbar-none': {
+      'scrollbar-width': 'none',
+      '&::-webkit-scrollbar': {
+        display: 'none'
+      }
+    },
+    '.scrollbar-thin': {
+      'scrollbar-width': 'thin'
+    }
+  })
+})
+```
+
+### Multiple Selectors
+
+```javascript
+addUtilities({
+  '.content-auto': {
+    'content-visibility': 'auto'
+  },
+  '.content-hidden': {
+    'content-visibility': 'hidden'
+  },
+  '.content-visible': {
+    'content-visibility': 'visible'
+  }
+})
+```
+
+### Keyframe Animations
+
+```javascript
+addUtilities({
+  '@keyframes enter': {
+    from: {
+      opacity: 'var(--tw-enter-opacity, 1)',
+      transform: 'translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)'
+    }
+  }
+})
+```
+
+### Using Arrays
+
+```javascript
+addUtilities([
+  {
+    '.rotate-y-180': {
+      transform: 'rotateY(180deg)'
+    }
+  },
+  {
+    '.preserve-3d': {
+      'transform-style': 'preserve-3d'
+    }
+  }
+])
+```
+
+## matchUtilities()
+
+Register dynamic utilities that accept arbitrary values and theme-based values.
+
+<ParamField path="utilities" type="Record<string, (value: string, extra: { modifier: string | null }) => CssInJs>" required>
+  Object mapping utility names to functions that return CSS styles based on the value
+</ParamField>
+
+<ParamField path="options" type="object">
+  Configuration for values, types, and modifiers
+  
+  <ParamField path="options.type" type="string | string[]">
+    Data type(s) to accept for arbitrary values: `'any'`, `'color'`, `'length'`, `'percentage'`, `'number'`, etc.
+  </ParamField>
+  
+  <ParamField path="options.values" type="Record<string, string>">
+    Named values that can be used with the utility (e.g., from theme)
+  </ParamField>
+  
+  <ParamField path="options.supportsNegativeValues" type="boolean">
+    Whether to generate negative versions of the utility (e.g., `-m-4`)
+  </ParamField>
+  
+  <ParamField path="options.modifiers" type="'any' | Record<string, string>">
+    Opacity modifiers for color utilities or custom modifiers
+  </ParamField>
+</ParamField>
+
+### Basic Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ matchUtilities }) {
+  matchUtilities(
+    {
+      'text-shadow': (value) => ({
+        'text-shadow': value
+      })
+    },
+    {
+      values: {
+        sm: '0 1px 2px rgba(0, 0, 0, 0.05)',
+        DEFAULT: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        lg: '0 8px 16px rgba(0, 0, 0, 0.15)'
+      }
+    }
+  )
+})
+```
+
+```html
+<div class="text-shadow">
+<div class="text-shadow-sm">
+<div class="text-shadow-lg">
+<div class="text-shadow-[0_4px_8px_rgba(0,0,0,0.2)]">
+```
+
+### With Type Validation
+
+```javascript
+matchUtilities(
+  {
+    'scroll-snap': (value) => ({
+      'scroll-snap-type': value
+    })
+  },
+  {
+    type: ['length', 'percentage'],
+    values: {
+      x: 'x mandatory',
+      y: 'y mandatory',
+      both: 'both mandatory'
+    }
+  }
+)
+```
+
+### Color Utilities with Modifiers
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ matchUtilities, theme }) {
+  matchUtilities(
+    {
+      scrollbar: (value, { modifier }) => ({
+        'scrollbar-color': value
+      })
+    },
+    {
+      type: 'color',
+      values: theme('colors'),
+      modifiers: 'any' // Supports opacity modifiers
+    }
+  )
+})
+```
+
+```html
+<div class="scrollbar-blue-500">
+<div class="scrollbar-blue-500/50">
+<div class="scrollbar-[#1fb6ff]">
+<div class="scrollbar-[#1fb6ff]/75">
+```
+
+### With Negative Values
+
+```javascript
+matchUtilities(
+  {
+    'skew-x': (value) => ({
+      transform: `skewX(${value})`
+    })
+  },
+  {
+    type: 'angle',
+    supportsNegativeValues: true,
+    values: {
+      3: '3deg',
+      6: '6deg',
+      12: '12deg'
+    }
+  }
+)
+```
+
+```html
+<div class="skew-x-3">
+<div class="-skew-x-3">
+<div class="skew-x-[17deg]">
+```
+
+### Using Theme Values
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ matchUtilities, theme }) {
+  matchUtilities(
+    {
+      'animate-delay': (value) => ({
+        'animation-delay': value
+      })
+    },
+    {
+      values: theme('transitionDelay')
+    }
+  )
+})
+```
+
+### Custom Modifiers
+
+```javascript
+matchUtilities(
+  {
+    'bg-gradient': (value, { modifier }) => {
+      return {
+        'background-image': `linear-gradient(${modifier || '0deg'}, ${value})`
+      }
+    }
+  },
+  {
+    type: 'color',
+    values: theme('colors'),
+    modifiers: {
+      'to-r': '90deg',
+      'to-br': '135deg',
+      'to-b': '180deg'
+    }
+  }
+)
+```
+
+## Supported Data Types
+
+When using the `type` option with arbitrary values:
+
+| Type | Examples |
+|------|----------|
+| `'any'` | Any value (default) |
+| `'color'` | `#fff`, `rgb(...)`, `hsl(...)`, `currentColor` |
+| `'length'` | `1px`, `2rem`, `3em`, `calc(...)` |
+| `'percentage'` | `50%`, `100%` |
+| `'number'` | `1`, `2.5`, `3` |
+| `'angle'` | `45deg`, `0.5turn`, `3.14rad` |
+| `'line-width'` | `thin`, `medium`, `thick`, or length |
+
+## Nested Class References
+
+You can reference the utility class name within nested selectors:
+
+```javascript
+addUtilities({
+  '.scrollbar-hide': {
+    '.scrollbar-hide::-webkit-scrollbar': {
+      display: 'none'
+    }
+  }
+})
+```
+
+For `matchUtilities`, the class name is automatically replaced with the actual candidate:
+
+```javascript
+matchUtilities({
+  tab: (value) => ({
+    '&[data-state="active"]': {
+      color: value
+    },
+    '.tab:hover': {
+      opacity: '0.8'
+    }
+  })
+})
+```
+
+<Note>
+  Utilities are automatically wrapped in `@layer utilities` and support all Tailwind variants like hover, focus, responsive, etc.
+</Note>

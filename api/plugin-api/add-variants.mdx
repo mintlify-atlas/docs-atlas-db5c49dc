@@ -1,0 +1,338 @@
+---
+title: 'Variants'
+description: 'Create custom variants with addVariant() and matchVariant() to modify utilities based on state or conditions'
+---
+
+## addVariant()
+
+Register a static variant that modifies how utilities are applied.
+
+<ParamField path="name" type="string" required>
+  The variant name (must be alphanumeric, lowercase, with dashes or underscores)
+</ParamField>
+
+<ParamField path="variant" type="string | string[] | CssInJs" required>
+  Selector transformation, media query, or CSS-in-JS object defining the variant behavior
+</ParamField>
+
+### String Selector
+
+Use `&` as a placeholder for the utility selector:
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addVariant }) {
+  addVariant('hocus', '&:hover, &:focus')
+})
+```
+
+```html
+<button class="hocus:bg-blue-500">
+  Hover or Focus
+</button>
+```
+
+Compiles to:
+
+```css
+.hocus\\:bg-blue-500:hover,
+.hocus\\:bg-blue-500:focus {
+  background-color: #3b82f6;
+}
+```
+
+### Array of Selectors
+
+```javascript
+addVariant('hocus', ['&:hover', '&:focus'])
+```
+
+### Object Syntax with @slot
+
+Use `@slot` to mark where the utility styles should be inserted:
+
+```javascript
+addVariant('hocus', {
+  '&:hover': '@slot',
+  '&:focus': '@slot'
+})
+```
+
+### Media Queries
+
+```javascript
+addVariant('tablet', '@media (min-width: 768px) and (max-width: 1024px)')
+```
+
+```html
+<div class="tablet:grid-cols-2">
+```
+
+### Complex Variants with Nesting
+
+```javascript
+addVariant('hocus-within', {
+  '@media (hover: hover)': {
+    '&:hover': '@slot'
+  },
+  '&:focus-within': '@slot'
+})
+```
+
+### At-Rules and Supports
+
+```javascript
+addVariant('supports-grid', '@supports (display: grid)')
+```
+
+```javascript
+addVariant('reduced-motion', '@media (prefers-reduced-motion: reduce)')
+```
+
+### Advanced Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ addVariant }) {
+  // Child selector
+  addVariant('child', '& > *')
+  
+  // Optional form fields
+  addVariant('optional', '&:optional')
+  
+  // RTL support
+  addVariant('rtl', '[dir="rtl"] &')
+  
+  // Print styles
+  addVariant('print', '@media print')
+})
+```
+
+## matchVariant()
+
+Register a dynamic variant that accepts values.
+
+<ParamField path="name" type="string" required>
+  The variant name
+</ParamField>
+
+<ParamField path="callback" type="(value: string, extra: { modifier: string | null }) => string | string[]" required>
+  Function that returns selector transformation(s) based on the value
+</ParamField>
+
+<ParamField path="options" type="object">
+  Configuration for values and sorting
+  
+  <ParamField path="options.values" type="Record<string, T>">
+    Named values that can be used with the variant
+  </ParamField>
+  
+  <ParamField path="options.sort" type="(a, b) => number">
+    Custom sorting function for variant order
+  </ParamField>
+</ParamField>
+
+### Basic Example
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ matchVariant }) {
+  matchVariant('nth', (value) => `&:nth-child(${value})`)
+})
+```
+
+```html
+<div class="nth-[2]:bg-blue-500">
+<div class="nth-[odd]:bg-gray-100">
+<div class="nth-[3n+1]:bg-red-500">
+```
+
+### With Named Values
+
+```javascript
+matchVariant(
+  'supports',
+  (value) => `@supports (${value})`,
+  {
+    values: {
+      grid: 'display: grid',
+      flex: 'display: flex',
+      sticky: 'position: sticky'
+    }
+  }
+)
+```
+
+```html
+<div class="supports-grid:grid">
+<div class="supports-flex:flex">
+<div class="supports-[transform]:rotate-45">
+```
+
+### Data Attributes
+
+```javascript
+matchVariant('data', (value) => `&[data-${value}]`)
+```
+
+```html
+<div class="data-[state=active]:bg-blue-500">
+<div class="data-[disabled]:opacity-50">
+```
+
+### ARIA States
+
+```javascript
+matchVariant('aria', (value) => `&[aria-${value}]`)
+```
+
+```html
+<button class="aria-[pressed=true]:bg-blue-600">
+<div class="aria-[expanded]:rotate-180">
+```
+
+### Screen Variants
+
+```javascript
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(function({ matchVariant }) {
+  matchVariant(
+    'max',
+    (value) => `@media (max-width: ${value})`,
+    {
+      values: {
+        sm: '640px',
+        md: '768px',
+        lg: '1024px',
+        xl: '1280px'
+      }
+    }
+  )
+})
+```
+
+```html
+<div class="max-sm:hidden">
+<div class="max-md:text-sm">
+<div class="max-[600px]:hidden">
+```
+
+### With Modifiers
+
+```javascript
+matchVariant(
+  'tooltip',
+  (value, { modifier }) => {
+    return `&[data-tooltip="${value}"]${modifier ? `[data-position="${modifier}"]` : ''}`
+  },
+  {
+    values: {
+      info: 'info',
+      warning: 'warning',
+      error: 'error'
+    }
+  }
+)
+```
+
+### Group and Peer Variants
+
+```javascript
+matchVariant('group', (value) => `:merge(.group\\/${value}) &`)
+```
+
+In v4, `group-*` and `peer-*` variants compound automatically, so you don't need to use `:merge()` anymore.
+
+### Custom Sorting
+
+```javascript
+matchVariant(
+  'min',
+  (value) => `@media (min-width: ${value})`,
+  {
+    values: {
+      sm: '640px',
+      md: '768px',
+      lg: '1024px'
+    },
+    sort(a, b) {
+      // Parse pixel values and sort numerically
+      const aValue = parseInt(a.value)
+      const bValue = parseInt(b.value)
+      return aValue - bValue
+    }
+  }
+)
+```
+
+## Variant Compounding
+
+Variants automatically work with `group-*` and `peer-*` patterns:
+
+```javascript
+addVariant('optional', '&:optional')
+```
+
+```html
+<div class="group">
+  <input class="group-optional:block" />
+</div>
+
+<input class="peer" />
+<div class="peer-optional:hidden"></div>
+```
+
+## Stacking Variants
+
+Variants can be stacked in any order:
+
+```html
+<button class="hover:focus:dark:md:bg-blue-500">
+```
+
+Variants are applied in a specific order for consistent behavior. Custom variants follow Tailwind's variant ordering system.
+
+## Validation
+
+<Note>
+  Variant names must:
+  - Start with a lowercase letter or number
+  - Contain only alphanumeric characters, dashes, or underscores
+  - Not include `:merge()` in v4 (automatically handled)
+</Note>
+
+Invalid examples:
+
+```javascript
+// ❌ Invalid: starts with uppercase
+addVariant('Hover', '&:hover')
+
+// ❌ Invalid: contains special characters
+addVariant('hover!', '&:hover')
+
+// ✅ Valid
+addVariant('hover', '&:hover')
+addVariant('hover2', '&:hover')
+addVariant('hover-state', '&:hover')
+addVariant('hover_state', '&:hover')
+```
+
+## Migration from v3
+
+In v4, the `:merge()` pseudo-class is no longer needed. Variants automatically compound:
+
+```javascript
+// v3
+addVariant('group-optional', ':merge(.group):optional &')
+
+// v4 (`:merge()` is ignored)
+addVariant('group-optional', '.group:optional &')
+```
+
+<Note>
+  All built-in Tailwind variants (hover, focus, dark, responsive, etc.) work automatically with custom utilities. You only need to register custom variants for new interaction patterns.
+</Note>

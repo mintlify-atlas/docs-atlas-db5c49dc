@@ -1,0 +1,473 @@
+---
+title: 'theme()'
+description: Reference theme variables in your CSS with the theme() function
+---
+
+The `theme()` CSS function allows you to reference values from your Tailwind theme (defined via `@theme`) directly in your CSS.
+
+## Syntax
+
+<CodeGroup>
+```css Modern Syntax
+color: theme(--color-primary);
+```
+
+```css Legacy Syntax  
+color: theme('colors.primary');
+```
+
+```css With Fallback
+color: theme(--color-primary, blue);
+```
+
+```css Inline Resolution
+width: theme(--width-lg inline);
+```
+</CodeGroup>
+
+## Basic Usage
+
+### Referencing Theme Variables
+
+Use `theme()` to reference CSS custom properties defined in `@theme`:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+  --spacing: 0.25rem;
+}
+
+.btn {
+  background: theme(--color-primary);
+  padding: theme(--spacing);
+}
+```
+
+Output:
+
+```css
+:root, :host {
+  --color-primary: #3b82f6;
+  --spacing: .25rem;
+}
+
+.btn {
+  background: var(--color-primary);
+  padding: var(--spacing);
+}
+```
+
+### Direct Value Resolution
+
+By default, `theme()` returns a `var()` reference. The actual value is resolved at runtime by the browser.
+
+## Inline Resolution
+
+Use the `inline` modifier to resolve theme values at build time:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+}
+
+.btn {
+  background: theme(--color-primary inline);
+}
+```
+
+Output:
+
+```css
+.btn {
+  background: #3b82f6;
+}
+```
+
+<Note>
+  The theme variable itself is not included in the output when using `inline`.
+</Note>
+
+### When to Use Inline
+
+<CodeGroup>
+```css Calculations
+/* Inline required for calc() */
+@theme {
+  --spacing: 0.25rem;
+}
+
+.element {
+  margin: calc(theme(--spacing inline) * 4);
+  /* Output: margin: calc(0.25rem * 4); */
+}
+```
+
+```css Media Queries
+/* Inline automatically applied in at-rules */
+@theme {
+  --breakpoint-md: 768px;
+}
+
+@media (width >= theme(--breakpoint-md)) {
+  /* Automatically inlined to: (width >= 768px) */
+  .container {
+    max-width: 1024px;
+  }
+}
+```
+
+```css Property Values
+/* Inline for better browser compatibility */
+@theme inline {
+  --radius: 0.5rem;
+}
+
+.card {
+  border-radius: theme(--radius inline);
+  /* Output: border-radius: 0.5rem; */
+}
+```
+</CodeGroup>
+
+## Fallback Values
+
+Provide a fallback value if the theme variable doesn't exist:
+
+```css
+.element {
+  color: theme(--color-accent, purple);
+}
+```
+
+If `--color-accent` is not defined:
+
+```css
+.element {
+  color: purple;
+}
+```
+
+### Multiple Fallbacks
+
+You can chain multiple fallbacks:
+
+```css
+.element {
+  color: theme(--color-primary, theme(--color-secondary, blue));
+}
+```
+
+### Fallback with var()
+
+When the theme value is a `var()` reference, the fallback is injected into it:
+
+```css
+@theme {
+  --color-primary: var(--user-primary, initial);
+}
+
+.element {
+  color: theme(--color-primary, red);
+}
+```
+
+Output:
+
+```css
+.element {
+  color: var(--user-primary, red);
+}
+```
+
+The `initial` placeholder in the theme is replaced with the provided fallback.
+
+## Special Theme Functions
+
+Tailwind provides additional CSS functions for working with theme values:
+
+### --theme()
+
+An alternative syntax that's identical to `theme()`:
+
+```css
+.element {
+  color: --theme(--color-primary);
+  /* Same as: theme(--color-primary) */
+}
+```
+
+### --spacing()
+
+Multiply the spacing scale by a value:
+
+```css
+@theme {
+  --spacing: 0.25rem;
+}
+
+.element {
+  margin: --spacing(4);
+  /* Output: calc(0.25rem * 4) */
+}
+```
+
+<Note>
+  The `--spacing` theme variable must be defined for `--spacing()` to work.
+</Note>
+
+### --alpha()
+
+Apply opacity to a color:
+
+```css
+.element {
+  background: --alpha(red / 50%);
+  /* Output: color-mix(in oklab, red 50%, transparent) */
+}
+```
+
+With theme variables:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+}
+
+.element {
+  background: --alpha(theme(--color-primary) / 0.5);
+}
+```
+
+## Using in At-Rules
+
+Theme functions are automatically inlined when used in at-rule conditions:
+
+### Media Queries
+
+```css
+@theme {
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+}
+
+@media (width >= theme(--breakpoint-md)) {
+  /* Auto-inlined to: (width >= 768px) */
+}
+
+@media (width < theme(--breakpoint-lg)) {
+  /* Auto-inlined to: (width < 1024px) */
+}
+```
+
+### Supports Queries
+
+```css
+@theme {
+  --grid-support: grid;
+}
+
+@supports (display: theme(--grid-support)) {
+  /* Auto-inlined to: (display: grid) */
+}
+```
+
+### Container Queries
+
+```css
+@theme {
+  --container-sm: 640px;
+}
+
+@container (width >= theme(--container-sm)) {
+  /* Auto-inlined to: (width >= 640px) */
+}
+```
+
+<Warning>
+  CSS custom properties cannot be used in at-rule conditions, so `theme()` automatically inlines values in these contexts.
+</Warning>
+
+## Legacy dot-notation Syntax
+
+The legacy `theme()` syntax using dot-notation is still supported:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+}
+
+.element {
+  /* Modern syntax (recommended) */
+  color: theme(--color-primary);
+
+  /* Legacy syntax (still works) */
+  color: theme('colors.primary');
+}
+```
+
+The legacy syntax:
+- Requires quotes around the path
+- Uses dots to separate path segments
+- Maps to the same theme variables
+
+<Note>
+  The modern `--variable` syntax is recommended for new projects.
+</Note>
+
+## Unquoting Quoted Values
+
+The legacy syntax automatically unquotes quoted theme values:
+
+```javascript
+// In legacy format
+theme('spacing.1\\.5') // Unescapes to: spacing.1.5
+```
+
+From the source code (css-functions.ts:206-224):
+
+```typescript
+function eventuallyUnquote(value: string) {
+  if (value[0] !== "'" && value[0] !== '"') return value
+
+  let unquoted = ''
+  let quoteChar = value[0]
+  for (let i = 1; i < value.length - 1; i++) {
+    let currentChar = value[i]
+    let nextChar = value[i + 1]
+
+    if (currentChar === '\\' && 
+        (nextChar === quoteChar || nextChar === '\\')) {
+      unquoted += nextChar
+      i++
+    } else {
+      unquoted += currentChar
+    }
+  }
+
+  return unquoted
+}
+```
+
+## Error Handling
+
+### Missing Theme Variable
+
+If a theme variable doesn't exist and no fallback is provided:
+
+```css
+.element {
+  color: theme(--color-missing);
+}
+```
+
+Error:
+```
+Could not resolve value for theme function: `theme(--color-missing)`.
+Consider checking if the variable name is correct or provide a 
+fallback value to silence this error.
+```
+
+### Provide Fallback to Avoid Errors
+
+```css
+.element {
+  color: theme(--color-missing, blue);
+  /* No error - falls back to blue */
+}
+```
+
+### Invalid Variable Name
+
+Modern syntax requires CSS custom property names (starting with `--`):
+
+```css
+/* ❌ Invalid */
+.element {
+  color: theme(primary);
+}
+/* Error: The theme() function can only be used with CSS variables */
+
+/* ✅ Valid */
+.element {
+  color: theme(--color-primary);
+}
+```
+
+## Function Processing
+
+From the source code (css-functions.ts:68-127), the `theme()` function:
+
+1. **Validates** the variable name starts with `--`
+2. **Checks** for the `inline` modifier
+3. **Auto-inlines** if used in an at-rule
+4. **Resolves** the value from the design system
+5. **Handles** fallback values
+6. **Injects** fallbacks into nested `var()` or `theme()` calls
+
+```typescript
+function theme(
+  designSystem: DesignSystem,
+  source: AstNode,
+  path: string,
+  ...fallback: string[]
+): string {
+  if (!path.startsWith('--')) {
+    throw new Error(
+      `The --theme(…) function can only be used with CSS variables from your theme.`
+    )
+  }
+
+  let inline = false
+
+  // Handle inline modifier
+  if (path.endsWith(' inline')) {
+    inline = true
+    path = path.slice(0, -7)
+  }
+
+  // Auto-inline in at-rules
+  if (source.kind === 'at-rule') {
+    inline = true
+  }
+
+  let resolvedValue = designSystem.resolveThemeValue(path, inline)
+
+  if (!resolvedValue) {
+    if (fallback.length > 0) return fallback.join(', ')
+    throw new Error(
+      `Could not resolve value for theme function: \`theme(${path})\``
+    )
+  }
+
+  // Handle fallback injection
+  if (fallback.length > 0) {
+    // ... fallback handling logic
+  }
+
+  return resolvedValue
+}
+```
+
+## Related Functions
+
+<CardGroup cols={2}>
+  <Card title="--spacing()" icon="ruler-horizontal">
+    Multiply the spacing scale
+    ```css
+    margin: --spacing(4);
+    ```
+  </Card>
+  
+  <Card title="--alpha()" icon="droplet">
+    Apply opacity to colors
+    ```css
+    background: --alpha(red / 50%);
+    ```
+  </Card>
+</CardGroup>
+
+## Related
+
+- [@theme](/api/css/at-theme) - Define theme variables
+- [Customizing Colors](/docs/customizing-colors) - Color customization guide
+- [Theme Configuration](/docs/theme) - Theme system overview

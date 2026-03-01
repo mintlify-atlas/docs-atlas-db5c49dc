@@ -1,0 +1,479 @@
+---
+title: Plugins
+description: Create and use plugins to extend Tailwind CSS functionality
+---
+
+Plugins let you register new utilities, components, variants, and more using JavaScript. This gives you complete control over extending Tailwind's functionality.
+
+## Plugin API Overview
+
+The plugin API provides these methods:
+
+<ParamField path="addUtilities" type="function">
+  Register new utility classes
+  ```ts
+  api.addUtilities({ '.scrollbar-hide': { 'scrollbar-width': 'none' } })
+  ```
+</ParamField>
+
+<ParamField path="matchUtilities" type="function">
+  Register utilities that accept values
+  ```ts
+  api.matchUtilities({ skew: (value) => ({ transform: `skew(${value})` }) })
+  ```
+</ParamField>
+
+<ParamField path="addVariant" type="function">
+  Register new variants
+  ```ts
+  api.addVariant('hocus', ['&:hover', '&:focus'])
+  ```
+</ParamField>
+
+<ParamField path="matchVariant" type="function">
+  Register variants that accept values
+  ```ts
+  api.matchVariant('nth', (value) => `&:nth-child(${value})`)
+  ```
+</ParamField>
+
+<ParamField path="addComponents" type="function">
+  Register component classes (same API as addUtilities)
+  ```ts
+  api.addComponents({ '.btn': { padding: '.5rem 1rem' } })
+  ```
+</ParamField>
+
+<ParamField path="theme" type="function">
+  Access theme values
+  ```ts
+  const colors = api.theme('colors')
+  ```
+</ParamField>
+
+<ParamField path="config" type="function">
+  Access config values
+  ```ts
+  const prefix = api.config('prefix')
+  ```
+</ParamField>
+
+## Creating a Simple Plugin
+
+Here's a basic plugin structure:
+
+```ts tailwind.config.ts
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(function ({ addUtilities }) {
+      addUtilities({
+        '.scrollbar-hide': {
+          'scrollbar-width': 'none',
+          '&::-webkit-scrollbar': {
+            display: 'none',
+          },
+        },
+      })
+    }),
+  ],
+}
+```
+
+Usage:
+
+```html
+<div class="scrollbar-hide overflow-auto">
+  Content with hidden scrollbar
+</div>
+```
+
+## Adding Static Utilities
+
+Add utilities with fixed styles:
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ addUtilities }) => {
+      addUtilities({
+        '.text-balance': {
+          'text-wrap': 'balance',
+        },
+        '.text-pretty': {
+          'text-wrap': 'pretty',
+        },
+        '.perspective-1000': {
+          perspective: '1000px',
+        },
+      })
+    }),
+  ],
+}
+```
+
+## Match Utilities (Dynamic Values)
+
+Create utilities that accept values:
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ matchUtilities, theme }) => {
+      matchUtilities(
+        {
+          perspective: (value) => ({
+            perspective: value,
+          }),
+        },
+        {
+          values: theme('perspective'),
+        },
+      )
+    }),
+  ],
+}
+```
+
+With theme values:
+
+```ts
+export default {
+  theme: {
+    extend: {
+      perspective: {
+        '500': '500px',
+        '1000': '1000px',
+        '2000': '2000px',
+      },
+    },
+  },
+  plugins: [/* plugin above */],
+}
+```
+
+Usage:
+
+```html
+<div class="perspective-1000">3D transform container</div>
+<div class="perspective-[1500px]">Arbitrary value</div>
+```
+
+## Match Utilities Options
+
+The `matchUtilities` function accepts options:
+
+```ts
+import type { CSSRuleObject } from 'tailwindcss/types/config'
+
+matchUtilities(
+  {
+    'gradient-angle': (value) => ({
+      '--tw-gradient-angle': value,
+    } as CSSRuleObject),
+  },
+  {
+    // Supported value types
+    type: ['angle', 'length'],
+    
+    // Whether negative values should work (-gradient-angle-45)
+    supportsNegativeValues: true,
+    
+    // Named values
+    values: {
+      '0': '0deg',
+      '45': '45deg',
+      '90': '90deg',
+      '180': '180deg',
+    },
+    
+    // Supported modifiers
+    modifiers: 'any', // or { 'half': '50%' }
+  },
+)
+```
+
+### Type Parameter
+
+The `type` parameter validates arbitrary values:
+
+- `'any'` - Any value is accepted
+- `'color'` - Colors only
+- `'length'` - Length values (px, rem, etc.)
+- `'percentage'` - Percentage values
+- `'number'` - Numbers
+- `'angle'` - Angle values (deg, rad, etc.)
+- Array of types: `['length', 'percentage']`
+
+## Adding Variants
+
+Create custom variants:
+
+<CodeGroup>
+```ts Static Variant
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ addVariant }) => {
+      // Simple pseudo-class
+      addVariant('hocus', ['&:hover', '&:focus'])
+      
+      // Media query
+      addVariant('supports-grid', '@supports (display: grid)')
+      
+      // Attribute selector
+      addVariant('optional', '&:optional')
+      
+      // Child selector
+      addVariant('child', '& > *')
+    }),
+  ],
+}
+```
+
+```ts Functional Variant
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ matchVariant }) => {
+      matchVariant(
+        'nth',
+        (value) => `&:nth-child(${value})`,
+      )
+      
+      matchVariant(
+        'supports',
+        (value) => `@supports (${value})`,
+      )
+    }),
+  ],
+}
+```
+</CodeGroup>
+
+## Accessing Theme Values
+
+Access theme values in your plugin:
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+export default {
+  plugins: [
+    plugin(({ matchUtilities, theme }) => {
+      matchUtilities(
+        {
+          'border-gradient': (value) => ({
+            'border-image': `linear-gradient(${value}) 1`,
+          }),
+        },
+        {
+          values: theme('colors'),
+          type: 'color',
+        },
+      )
+    }),
+  ],
+}
+```
+
+## Plugin with Configuration
+
+Create plugins that accept configuration:
+
+```ts
+import plugin from 'tailwindcss/plugin'
+import type { PluginAPI } from 'tailwindcss/types/config'
+
+const myPlugin = plugin.withOptions<{ className?: string }>(
+  (options = {}) => {
+    return ({ addUtilities }: PluginAPI) => {
+      const className = options.className ?? 'custom'
+      
+      addUtilities({
+        [`.${className}`]: {
+          display: 'flex',
+          'align-items': 'center',
+        },
+      })
+    }
+  },
+  (options = {}) => {
+    return {
+      theme: {
+        extend: {
+          colors: {
+            custom: options.className ?? 'custom',
+          },
+        },
+      },
+    }
+  },
+)
+
+export default {
+  plugins: [
+    myPlugin({ className: 'flex-center' }),
+  ],
+}
+```
+
+## Real-World Plugin Examples
+
+### Scrollbar Utilities
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+const scrollbarPlugin = plugin(({ addUtilities, matchUtilities, theme }) => {
+  addUtilities({
+    '.scrollbar-thin': {
+      'scrollbar-width': 'thin',
+    },
+    '.scrollbar-none': {
+      'scrollbar-width': 'none',
+      '&::-webkit-scrollbar': {
+        display: 'none',
+      },
+    },
+  })
+  
+  matchUtilities(
+    {
+      'scrollbar': (value) => ({
+        '&::-webkit-scrollbar': {
+          width: value,
+          height: value,
+        },
+      }),
+      'scrollbar-track': (value) => ({
+        '&::-webkit-scrollbar-track': {
+          'background-color': value,
+        },
+      }),
+      'scrollbar-thumb': (value) => ({
+        '&::-webkit-scrollbar-thumb': {
+          'background-color': value,
+        },
+      }),
+    },
+    {
+      values: theme('colors'),
+      type: 'color',
+    },
+  )
+})
+
+export default {
+  plugins: [scrollbarPlugin],
+}
+```
+
+### Text Shadow Plugin
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+const textShadowPlugin = plugin(({ matchUtilities, theme }) => {
+  matchUtilities(
+    {
+      'text-shadow': (value) => ({
+        'text-shadow': value,
+      }),
+    },
+    {
+      values: {
+        sm: '0 1px 2px rgb(0 0 0 / 0.5)',
+        DEFAULT: '0 2px 4px rgb(0 0 0 / 0.5)',
+        lg: '0 8px 16px rgb(0 0 0 / 0.5)',
+      },
+    },
+  )
+})
+```
+
+### Animation Delay Plugin
+
+```ts
+import plugin from 'tailwindcss/plugin'
+
+const animationDelayPlugin = plugin(({ matchUtilities, theme }) => {
+  matchUtilities(
+    {
+      'animation-delay': (value) => ({
+        'animation-delay': value,
+      }),
+    },
+    {
+      values: theme('transitionDelay'),
+    },
+  )
+})
+```
+
+## Distributing Plugins
+
+Create a shareable plugin package:
+
+```ts my-plugin/index.ts
+import plugin from 'tailwindcss/plugin'
+
+export default plugin(({ addUtilities, theme }) => {
+  // Your plugin code
+})
+```
+
+Package structure:
+
+```
+my-plugin/
+├── index.ts
+├── package.json
+└── README.md
+```
+
+`package.json`:
+
+```json
+{
+  "name": "tailwindcss-my-plugin",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "peerDependencies": {
+    "tailwindcss": ">=4.0.0"
+  }
+}
+```
+
+Usage:
+
+```ts
+import myPlugin from 'tailwindcss-my-plugin'
+
+export default {
+  plugins: [myPlugin],
+}
+```
+
+## Plugin Best Practices
+
+1. **Use TypeScript** - Get type safety and better IDE support
+2. **Provide defaults** - Make configuration optional with sensible defaults
+3. **Follow naming conventions** - Use Tailwind's naming patterns
+4. **Document thoroughly** - Include usage examples and options
+5. **Test across browsers** - Ensure cross-browser compatibility
+
+<Note>
+When creating utilities that use modifiers (like opacity modifiers for colors), set `modifiers: 'any'` in the options to allow arbitrary modifier values.
+</Note>
+
+<Warning>
+Plugins run during build time. Avoid expensive operations or side effects that could slow down builds.
+</Warning>

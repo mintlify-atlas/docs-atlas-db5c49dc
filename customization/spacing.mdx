@@ -1,0 +1,323 @@
+---
+title: Spacing Scale
+description: Customize spacing values for padding, margin, gap, and more
+---
+
+The spacing scale in Tailwind CSS controls values for padding, margin, gap, width, height, and other spatial properties.
+
+## Default Spacing Scale
+
+Tailwind provides a comprehensive default spacing scale:
+
+```css
+@theme {
+  --spacing-px: 1px;
+  --spacing-0: 0px;
+  --spacing-0_5: 0.125rem;  /* 2px */
+  --spacing-1: 0.25rem;     /* 4px */
+  --spacing-1_5: 0.375rem;  /* 6px */
+  --spacing-2: 0.5rem;      /* 8px */
+  --spacing-2_5: 0.625rem;  /* 10px */
+  --spacing-3: 0.75rem;     /* 12px */
+  --spacing-3_5: 0.875rem;  /* 14px */
+  --spacing-4: 1rem;        /* 16px */
+  --spacing-5: 1.25rem;     /* 20px */
+  --spacing-6: 1.5rem;      /* 24px */
+  --spacing-7: 1.75rem;     /* 28px */
+  --spacing-8: 2rem;        /* 32px */
+  --spacing-9: 2.25rem;     /* 36px */
+  --spacing-10: 2.5rem;     /* 40px */
+  --spacing-11: 2.75rem;    /* 44px */
+  --spacing-12: 3rem;       /* 48px */
+  --spacing-14: 3.5rem;     /* 56px */
+  --spacing-16: 4rem;       /* 64px */
+  --spacing-20: 5rem;       /* 80px */
+  --spacing-24: 6rem;       /* 96px */
+  --spacing-28: 7rem;       /* 112px */
+  --spacing-32: 8rem;       /* 128px */
+  --spacing-36: 9rem;       /* 144px */
+  --spacing-40: 10rem;      /* 160px */
+  --spacing-44: 11rem;      /* 176px */
+  --spacing-48: 12rem;      /* 192px */
+  --spacing-52: 13rem;      /* 208px */
+  --spacing-56: 14rem;      /* 224px */
+  --spacing-60: 15rem;      /* 240px */
+  --spacing-64: 16rem;      /* 256px */
+  --spacing-72: 18rem;      /* 288px */
+  --spacing-80: 20rem;      /* 320px */
+  --spacing-96: 24rem;      /* 384px */
+}
+```
+
+## Adding Custom Spacing
+
+Extend the spacing scale with custom values:
+
+<CodeGroup>
+```css CSS @theme
+@theme {
+  --spacing-18: 4.5rem;
+  --spacing-88: 22rem;
+  --spacing-128: 32rem;
+  --spacing-sidebar: 280px;
+  --spacing-header: 64px;
+}
+```
+
+```ts JavaScript Config
+export default {
+  theme: {
+    extend: {
+      spacing: {
+        '18': '4.5rem',
+        '88': '22rem',
+        '128': '32rem',
+        'sidebar': '280px',
+        'header': '64px',
+      },
+    },
+  },
+}
+```
+</CodeGroup>
+
+## Using Spacing Values
+
+Spacing values are used across many utility types:
+
+### Padding
+
+```html
+<div class="p-4">Padding on all sides</div>
+<div class="px-6 py-4">Horizontal and vertical padding</div>
+<div class="pt-8 pr-4 pb-8 pl-4">Individual sides</div>
+<div class="p-sidebar">Custom spacing value</div>
+```
+
+### Margin
+
+```html
+<div class="m-4">Margin on all sides</div>
+<div class="mx-auto">Centered with auto margin</div>
+<div class="-mt-4">Negative top margin</div>
+<div class="mb-header">Custom margin value</div>
+```
+
+### Gap
+
+```html
+<div class="flex gap-4">Flexbox with gap</div>
+<div class="grid gap-x-6 gap-y-4">Grid with different gaps</div>
+<div class="flex gap-18">Custom gap value</div>
+```
+
+### Width & Height
+
+```html
+<div class="w-64 h-32">Fixed dimensions</div>
+<div class="w-sidebar h-screen">Custom width, full height</div>
+```
+
+### Inset
+
+```html
+<div class="absolute inset-4">Positioned with inset</div>
+<div class="absolute top-0 right-0">Positioned corner</div>
+```
+
+## Spacing Utilities
+
+Spacing values work with these utility groups:
+
+<ParamField path="Padding" type="spacing">
+  `p-*`, `px-*`, `py-*`, `pt-*`, `pr-*`, `pb-*`, `pl-*`, `ps-*`, `pe-*`
+</ParamField>
+
+<ParamField path="Margin" type="spacing">
+  `m-*`, `mx-*`, `my-*`, `mt-*`, `mr-*`, `mb-*`, `ml-*`, `ms-*`, `me-*`
+  
+  Supports negative values: `-m-*`, `-mt-*`, etc.
+</ParamField>
+
+<ParamField path="Gap" type="spacing">
+  `gap-*`, `gap-x-*`, `gap-y-*`
+</ParamField>
+
+<ParamField path="Space Between" type="spacing">
+  `space-x-*`, `space-y-*`
+  
+  Supports negative values: `-space-x-*`, `-space-y-*`
+</ParamField>
+
+<ParamField path="Width" type="spacing">
+  `w-*`, `min-w-*`, `max-w-*`
+</ParamField>
+
+<ParamField path="Height" type="spacing">
+  `h-*`, `min-h-*`, `max-h-*`
+</ParamField>
+
+<ParamField path="Size" type="spacing">
+  `size-*` (sets both width and height)
+</ParamField>
+
+<ParamField path="Inset" type="spacing">
+  `inset-*`, `top-*`, `right-*`, `bottom-*`, `left-*`, `start-*`, `end-*`
+  
+  Supports negative values for all
+</ParamField>
+
+<ParamField path="Scroll Margin" type="spacing">
+  `scroll-m-*`, `scroll-mx-*`, `scroll-my-*`, `scroll-mt-*`, etc.
+</ParamField>
+
+<ParamField path="Scroll Padding" type="spacing">
+  `scroll-p-*`, `scroll-px-*`, `scroll-py-*`, `scroll-pt-*`, etc.
+</ParamField>
+
+## Arbitrary Values
+
+Use arbitrary values for one-off spacing:
+
+```html
+<div class="p-[17px]">Exact pixel padding</div>
+<div class="m-[1.375rem]">Exact rem margin</div>
+<div class="gap-[clamp(1rem,5vw,3rem)]">Responsive gap</div>
+```
+
+## Replacing the Spacing Scale
+
+Completely replace the default scale:
+
+<CodeGroup>
+```css CSS @theme
+@theme {
+  /* Remove defaults */
+  --spacing-*: initial;
+  
+  /* Define new scale */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+}
+```
+
+```ts JavaScript Config
+export default {
+  theme: {
+    spacing: {
+      'xs': '0.5rem',
+      'sm': '1rem',
+      'md': '1.5rem',
+      'lg': '2rem',
+      'xl': '3rem',
+    },
+  },
+}
+```
+</CodeGroup>
+
+## Semantic Spacing
+
+Create semantic spacing names:
+
+```css
+@theme {
+  --spacing-section: 6rem;
+  --spacing-container: 2rem;
+  --spacing-card: 1.5rem;
+  --spacing-element: 1rem;
+  --spacing-tight: 0.5rem;
+}
+```
+
+Usage:
+
+```html
+<section class="py-section">
+  <div class="px-container">
+    <div class="p-card space-y-element">
+      <h2 class="mb-tight">Title</h2>
+      <p>Content</p>
+    </div>
+  </div>
+</section>
+```
+
+## Fractional Spacing
+
+The default scale includes fractional values:
+
+```html
+<div class="p-0.5">0.125rem (2px) padding</div>
+<div class="m-1.5">0.375rem (6px) margin</div>
+<div class="gap-2.5">0.625rem (10px) gap</div>
+```
+
+## Dynamic Spacing with Functions
+
+Create spacing values from the theme:
+
+```ts tailwind.config.ts
+export default {
+  theme: {
+    extend: {
+      spacing: ({ theme }) => ({
+        'safe-top': theme('spacing.16'),
+        'safe-bottom': theme('spacing.20'),
+        'double-4': `calc(${theme('spacing.4')} * 2)`,
+      }),
+    },
+  },
+}
+```
+
+## Responsive Spacing
+
+Combine spacing with responsive variants:
+
+```html
+<div class="p-4 md:p-6 lg:p-8">
+  Responsive padding
+</div>
+
+<div class="m-2 sm:m-4 md:m-8 lg:m-12">
+  Responsive margin
+</div>
+
+<div class="gap-2 lg:gap-4">
+  Responsive gap
+</div>
+```
+
+## Negative Spacing
+
+Most spacing utilities support negative values:
+
+```html
+<!-- Negative margins -->
+<div class="-mt-4">Negative top margin</div>
+<div class="-mx-2">Negative horizontal margin</div>
+
+<!-- Negative space between -->
+<div class="flex flex-col -space-y-4">
+  <div>Overlapping items</div>
+  <div>Overlapping items</div>
+</div>
+
+<!-- Negative inset -->
+<div class="absolute -top-4 -left-4">Positioned outside</div>
+```
+
+## Best Practices
+
+1. **Use the default scale** - It's designed to work well for most projects
+2. **Add semantic names** - For common spacing patterns in your design
+3. **Maintain consistency** - Stick to the scale instead of arbitrary values
+4. **Use responsive variants** - For better mobile-to-desktop experiences
+
+<Note>
+The spacing scale is based on a `0.25rem` (4px) increment, which provides good granularity while maintaining visual harmony. This is a common design system pattern.
+</Note>

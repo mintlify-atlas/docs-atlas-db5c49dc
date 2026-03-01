@@ -1,0 +1,427 @@
+---
+title: PostCSS Plugin
+description: Complete API reference for the @tailwindcss/postcss plugin
+---
+
+The `@tailwindcss/postcss` plugin integrates Tailwind CSS v4 into any PostCSS-based build pipeline with automatic CSS generation, caching, and optimization.
+
+## Installation
+
+```bash
+npm install @tailwindcss/postcss
+```
+
+## Basic Usage
+
+```js postcss.config.js
+import tailwindcss from '@tailwindcss/postcss'
+
+export default {
+  plugins: [tailwindcss()],
+}
+```
+
+Then create a CSS file that imports Tailwind:
+
+```css src/index.css
+@import 'tailwindcss';
+```
+
+## Plugin Options
+
+The PostCSS plugin accepts an options object to customize its behavior.
+
+### Type Definition
+
+```ts
+export type PluginOptions = {
+  /**
+   * The base directory to scan for class candidates.
+   *
+   * Defaults to the current working directory.
+   */
+  base?: string
+
+  /**
+   * Optimize and minify the output CSS.
+   */
+  optimize?: boolean | { minify?: boolean }
+
+  /**
+   * Enable or disable asset URL rewriting.
+   *
+   * Defaults to `true`.
+   */
+  transformAssetUrls?: boolean
+}
+```
+
+### Configuration
+
+<ParamField path="base" type="string">
+  The base directory to scan for class candidates. The scanner will look for source files relative to this path.
+  
+  **Default:** `process.cwd()`
+</ParamField>
+
+<ParamField path="optimize" type="boolean | { minify?: boolean }">
+  Controls CSS optimization using Lightning CSS. By default, optimization is enabled in production (when `NODE_ENV=production`).
+  
+  - `true` - Enable optimization and minification
+  - `false` - Disable optimization completely
+  - `{ minify: false }` - Enable optimization but disable minification
+  
+  **Default:** `process.env.NODE_ENV === 'production'`
+</ParamField>
+
+<ParamField path="transformAssetUrls" type="boolean">
+  Enable or disable asset URL rewriting for `url()` functions in CSS. When enabled, the plugin handles `@import` resolution and rewrites relative URLs automatically.
+  
+  Disable this if your bundler or framework provides its own URL rewriting (e.g., webpack, Vite).
+  
+  **Default:** `true`
+</ParamField>
+
+## Examples
+
+### Custom Base Directory
+
+Change where the plugin searches for source files:
+
+```js postcss.config.js
+import tailwindcss from '@tailwindcss/postcss'
+import path from 'node:path'
+
+export default {
+  plugins: [
+    tailwindcss({
+      base: path.resolve(__dirname, './src'),
+    }),
+  ],
+}
+```
+
+### Disable Optimization
+
+Keep CSS unoptimized for easier debugging:
+
+```js postcss.config.js
+import tailwindcss from '@tailwindcss/postcss'
+
+export default {
+  plugins: [
+    tailwindcss({
+      optimize: false,
+    }),
+  ],
+}
+```
+
+### Optimization Without Minification
+
+Use Lightning CSS for vendor prefixing but keep output readable:
+
+```js postcss.config.js
+import tailwindcss from '@tailwindcss/postcss'
+
+export default {
+  plugins: [
+    tailwindcss({
+      optimize: { minify: false },
+    }),
+  ],
+}
+```
+
+### Disable URL Rewriting
+
+Let your bundler handle `url()` resolution:
+
+```js postcss.config.js
+import tailwindcss from '@tailwindcss/postcss'
+
+export default {
+  plugins: [
+    tailwindcss({
+      transformAssetUrls: false,
+    }),
+  ],
+}
+```
+
+## Plugin Architecture
+
+The PostCSS plugin is composed of multiple internal plugins that process your CSS:
+
+### 1. Fix Relative Paths Plugin
+
+Runs before the main Tailwind plugin to handle cases where `postcss-import` has already processed `@import` statements. This ensures relative paths remain correct after imports are resolved.
+
+### 2. Main Tailwind Plugin
+
+Processes Tailwind directives and generates utility classes:
+
+**Plugin Name:** `tailwindcss`
+
+**Hook:** `Once` (processes the entire stylesheet once)
+
+**Process:**
+1. Quick bail check for non-Tailwind CSS files
+2. Retrieve or create compilation context from cache
+3. Determine rebuild strategy (full or incremental)
+4. Set up or reuse Tailwind compiler
+5. Scan source files for class candidates
+6. Build CSS from candidates
+7. Optionally optimize with Lightning CSS
+8. Update PostCSS AST with generated CSS
+
+## Internal Behavior
+
+### Caching Strategy
+
+The plugin uses an LRU cache (max 50 entries) to store compilation state:
+
+```ts
+interface CacheEntry {
+  mtimes: Map<string, number>          // File modification times
+  compiler: ReturnType<typeof compileAst> | null
+  scanner: Scanner | null
+  tailwindCssAst: AstNode[]            // Internal Tailwind AST
+  cachedPostCssAst: Root               // Cached PostCSS AST
+  optimizedPostCssAst: Root            // Optimized PostCSS AST
+  fullRebuildPaths: string[]           // Dependencies requiring rebuild
+}
+```
+
+**Cache Key Format:**
+```
+{inputFile}:{base}:{JSON.stringify(optimize)}
+```
+
+### Rebuild Strategy
+
+The plugin determines whether a full rebuild is needed by:
+
+1. Tracking modification times (`mtimeMs`) of all dependencies
+2. Comparing current mtimes with cached values
+3. Triggering full rebuild if any file has changed
+4. Otherwise, performing incremental build
+
+**Full Rebuild Triggers:**
+- Config file changes
+- Plugin file changes
+- Imported CSS changes
+- Input CSS file changes
+- Build errors (forces next build to be full)
+
+### AST Transformation
+
+The plugin converts between three AST formats:
+
+1. **PostCSS AST → Tailwind CSS AST**
+   - Converts on initial compilation
+   - Extracts Tailwind directives
+   
+2. **Tailwind CSS AST → PostCSS AST**
+   - Converts generated utilities back to PostCSS
+   - Preserves source positions for error reporting
+   
+3. **CSS String → PostCSS AST**
+   - Used when optimization is enabled
+   - Lightning CSS outputs string, parsed back to PostCSS
+
+### Dependency Tracking
+
+The plugin registers dependencies with PostCSS for proper rebuilds:
+
+**Dependency Types:**
+
+<ResponseField name="dependency" type="object">
+  Standard file dependency
+  
+  ```js
+  {
+    type: 'dependency',
+    plugin: '@tailwindcss/postcss',
+    file: '/absolute/path/to/file.js',
+    parent: result.opts.from
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="dir-dependency" type="object">
+  Directory glob dependency
+  
+  ```js
+  {
+    type: 'dir-dependency',
+    plugin: '@tailwindcss/postcss',
+    dir: '/absolute/path/to/dir',
+    glob: '**/*.{js,jsx,ts,tsx}',
+    parent: result.opts.from
+  }
+  ```
+</ResponseField>
+
+### Quick Bail Optimization
+
+Before processing, the plugin checks for Tailwind-specific at-rules:
+
+```ts
+const TAILWIND_AT_RULES = [
+  '@import',
+  '@reference',
+  '@theme',
+  '@variant',
+  '@config',
+  '@plugin',
+  '@apply',
+  '@tailwind'
+]
+```
+
+If none are found, processing is skipped entirely, improving performance for non-Tailwind CSS files.
+
+## CSS Module Support
+
+The plugin automatically detects CSS Module files (`.module.css`) and disables the `@property` polyfill to prevent global `*` rules that would cause build failures.
+
+```ts
+const isCSSModuleFile = inputFile.endsWith('.module.css')
+const polyfills = isCSSModuleFile 
+  ? Polyfills.All ^ Polyfills.AtProperty 
+  : Polyfills.All
+```
+
+## Error Handling
+
+The plugin implements robust error handling:
+
+1. **Compilation Errors:**
+   - Logged to console
+   - Context cache is cleared
+   - Dependencies still registered for rebuild
+   - Error converted to PostCSS error with position info
+
+2. **Recovery:**
+   - Failed builds force next build to be full rebuild
+   - Require cache cleared for changed dependencies
+   - Scanner and compiler reset on error
+
+## Optimization Pipeline
+
+When `optimize` is enabled:
+
+1. **AST to CSS:** Convert Tailwind AST to CSS string
+2. **Lightning CSS:** Process CSS for vendor prefixes, minification
+3. **CSS to PostCSS AST:** Parse optimized CSS back to PostCSS AST
+4. **Cache Result:** Store optimized AST for reuse
+
+When disabled:
+
+1. **Direct AST Conversion:** Convert Tailwind AST directly to PostCSS AST
+2. **No String Conversion:** Avoids parse/stringify overhead
+3. **Preserves Formatting:** Maintains original indentation (2 spaces)
+
+## PostCSS Messages
+
+The plugin communicates with PostCSS and other plugins through messages:
+
+```js
+result.messages.push({
+  type: 'dependency',
+  plugin: '@tailwindcss/postcss',
+  file: '/path/to/file',
+  parent: result.opts.from,
+})
+```
+
+These messages are used by:
+- Build tools for file watching
+- Other PostCSS plugins for dependency tracking
+- Frameworks for hot module replacement
+
+## TypeScript Support
+
+The plugin includes full TypeScript definitions:
+
+```ts
+import type { PluginOptions } from '@tailwindcss/postcss'
+import tailwindcss from '@tailwindcss/postcss'
+
+const plugin = tailwindcss({
+  base: './src',
+  optimize: true,
+  transformAssetUrls: true,
+})
+```
+
+## Compatibility
+
+- **PostCSS:** 8.5.6 or higher
+- **Node.js:** 18.0.0 or higher
+- **Tailwind CSS:** v4.0.0 or higher
+
+## Framework Integration
+
+### Next.js
+
+```js next.config.js
+module.exports = {
+  // Tailwind is configured in postcss.config.js
+}
+```
+
+### Remix
+
+```js postcss.config.js
+import tailwindcss from '@tailwindcss/postcss'
+
+export default {
+  plugins: [tailwindcss()],
+}
+```
+
+### Astro
+
+```js astro.config.mjs
+import tailwindcss from '@tailwindcss/postcss'
+
+export default {
+  integrations: [
+    {
+      name: 'tailwindcss',
+      hooks: {
+        'astro:config:setup': ({ updateConfig }) => {
+          updateConfig({
+            vite: {
+              css: {
+                postcss: {
+                  plugins: [tailwindcss()],
+                },
+              },
+            },
+          })
+        },
+      },
+    },
+  ],
+}
+```
+
+## Debugging
+
+Enable debug logging with the `DEBUG` environment variable:
+
+```bash
+DEBUG=1 postcss input.css -o output.css
+```
+
+Debug output includes timing for:
+- Quick bail checks
+- Compiler setup
+- Scanner initialization
+- Candidate scanning
+- CSS building
+- AST transformations
+- Optimization passes

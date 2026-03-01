@@ -1,0 +1,448 @@
+---
+title: CSS Functions & Directives
+description: Use CSS functions like theme() and directives like @apply, @theme, and @source
+---
+
+## CSS Functions
+
+Tailwind CSS provides several CSS functions for accessing theme values and manipulating colors.
+
+### theme() Function
+
+The `theme()` function resolves values from your theme configuration.
+
+#### Basic Usage
+
+```css
+.custom-component {
+  padding: theme(--spacing);
+  color: theme(--color-blue-500);
+  font-size: theme(--text-lg);
+}
+```
+
+<Note>
+In Tailwind CSS v4, theme values are accessed using CSS variable names that start with `--`.
+</Note>
+
+#### With Fallback Values
+
+```css
+.custom-component {
+  /* Use theme value, fallback to 1rem */
+  padding: theme(--spacing, 1rem);
+  
+  /* Multiple fallback values */
+  color: theme(--color-primary, theme(--color-blue-500, blue));
+}
+```
+
+#### Inline Resolution
+
+Some contexts require inline resolution rather than CSS variable references:
+
+```css
+/* Force inline resolution with 'inline' keyword */
+.custom-component {
+  padding: theme(--spacing inline);
+}
+
+/* Automatically inlined in at-rules */
+@media (width >= theme(--breakpoint-md)) {
+  /* theme() is automatically resolved inline here */
+  .custom-component {
+    padding: 2rem;
+  }
+}
+```
+
+<Warning>
+CSS variables cannot be used in certain contexts like media queries. Tailwind automatically inlines theme values in these cases.
+</Warning>
+
+#### Implementation Details
+
+From `css-functions.ts:68-127`:
+
+```typescript
+function theme(
+  designSystem: DesignSystem,
+  source: AstNode,
+  path: string,
+  ...fallback: string[]
+): string {
+  if (!path.startsWith('--')) {
+    throw new Error(
+      `The --theme(…) function can only be used with CSS variables from your theme.`
+    )
+  }
+
+  let inline = false
+
+  // Handle `--theme(… inline)` to force inline resolution
+  if (path.endsWith(' inline')) {
+    inline = true
+    path = path.slice(0, -7)
+  }
+
+  // If used within at-rule, always inline
+  if (source.kind === 'at-rule') {
+    inline = true
+  }
+
+  let resolvedValue = designSystem.resolveThemeValue(path, inline)
+
+  if (!resolvedValue) {
+    if (fallback.length > 0) return fallback.join(', ')
+    throw new Error(
+      `Could not resolve value for theme function: \`theme(${path})\`.`
+    )
+  }
+
+  return resolvedValue
+}
+```
+
+### --alpha() Function
+
+Apply opacity to colors using the `--alpha()` function.
+
+```css
+.custom-component {
+  /* Apply 50% opacity to a color */
+  background: --alpha(var(--color-blue-500) / 50%);
+  
+  /* Using a numeric value (converted to percentage) */
+  color: --alpha(var(--color-red-500) / 0.5);
+}
+```
+
+Implementation from `css-functions.ts:19-40`:
+
+```typescript
+function alpha(
+  _designSystem: DesignSystem,
+  _source: AstNode,
+  value: string,
+  ...rest: string[]
+): string {
+  let [color, alpha] = segment(value, '/').map((v) => v.trim())
+
+  if (!color || !alpha) {
+    throw new Error(
+      `The --alpha(…) function requires a color and an alpha value, e.g.: \`--alpha(var(--my-color) / 50%)\``
+    )
+  }
+
+  return withAlpha(color, alpha)
+}
+```
+
+The result uses `color-mix()`:
+
+```css
+/* Input */
+background: --alpha(blue / 50%);
+
+/* Output */
+background: color-mix(in oklab, blue 50%, transparent);
+```
+
+### --spacing() Function
+
+Multiply the theme's base spacing value:
+
+```css
+@theme {
+  --spacing: 0.25rem;
+}
+
+.custom-component {
+  /* 4 * 0.25rem = 1rem */
+  margin: --spacing(4);
+  
+  /* 8 * 0.25rem = 2rem */
+  padding: --spacing(8);
+}
+```
+
+Implementation from `css-functions.ts:42-66`:
+
+```typescript
+function spacing(
+  designSystem: DesignSystem,
+  _source: AstNode,
+  value: string,
+  ...rest: string[]
+): string {
+  if (!value) {
+    throw new Error(
+      `The --spacing(…) function requires an argument.`
+    )
+  }
+
+  let multiplier = designSystem.theme.resolve(null, ['--spacing'])
+  if (!multiplier) {
+    throw new Error(
+      'The --spacing(…) function requires that the `--spacing` theme variable exists.'
+    )
+  }
+
+  return `calc(${multiplier} * ${value})`
+}
+```
+
+## Directives
+
+### @apply Directive
+
+The `@apply` directive extracts utility classes into custom CSS.
+
+#### Basic Usage
+
+```css
+.btn-primary {
+  @apply bg-blue-500 text-white px-4 py-2 rounded;
+}
+
+.card {
+  @apply p-6 bg-white shadow-lg rounded-lg;
+}
+```
+
+<Tip>
+Use `@apply` to extract repeated utility patterns into semantic component classes.
+</Tip>
+
+#### With Variants
+
+```css
+.interactive-card {
+  @apply bg-white hover:bg-gray-50;
+  @apply transition-colors duration-200;
+  @apply dark:bg-gray-800 dark:hover:bg-gray-700;
+}
+```
+
+#### In Custom Utilities
+
+```css
+@utility my-button {
+  @apply px-4 py-2 rounded;
+  @apply font-semibold;
+  transition: all 0.2s;
+}
+```
+
+#### Circular Dependency Detection
+
+Tailwind prevents circular dependencies:
+
+```css
+@utility foo {
+  @apply bar;
+}
+
+@utility bar {
+  @apply foo; /* ❌ Error: Circular dependency */
+}
+```
+
+#### Implementation Highlights
+
+From `apply.ts:10-325`:
+
+- Topological sorting ensures utilities are applied in dependency order
+- Circular dependencies are detected and reported with helpful errors
+- `@apply` inside `@utility` is fully supported
+- Nested `@apply` is handled correctly
+
+<Warning>
+**@apply Restrictions:**
+
+- Cannot be used inside `@keyframes`
+- Must be used within a rule context (has a parent selector)
+- Cannot apply unprefixed utilities when a prefix is configured
+- Cannot apply blocklisted classes
+</Warning>
+
+### @theme Directive
+
+Define theme values using the `@theme` directive.
+
+#### Basic Theme Definition
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --spacing: 0.25rem;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+```
+
+#### Reference Mode
+
+Use `@theme reference` to define theme values that can be referenced but won't be output as CSS variables:
+
+```css
+@theme reference {
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+}
+```
+
+<Note>
+Reference mode is useful for values that are only used in specific contexts (like breakpoints in media queries) and don't need to be available as CSS custom properties.
+</Note>
+
+#### Namespace Organization
+
+```css
+@theme {
+  /* Color palette */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-500: #3b82f6;
+  --color-blue-900: #1e3a8a;
+  
+  /* Spacing scale */
+  --spacing: 0.25rem;
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  
+  /* Typography */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+}
+```
+
+#### Theme Keys for Utilities
+
+Utilities look up values in specific theme namespaces:
+
+```typescript
+// From utilities.ts
+functionalUtility('text', {
+  themeKeys: ['--font-size'],
+  // text-lg looks up --font-size-lg
+})
+
+functionalUtility('bg', {
+  themeKeys: ['--color'],
+  // bg-blue-500 looks up --color-blue-500
+})
+```
+
+### @source Directive
+
+The `@source` directive controls which files are scanned for utility classes.
+
+#### Basic Usage
+
+```css
+/* Scan specific directories */
+@source "./src/**/*.{html,jsx,tsx}";
+
+/* Multiple source patterns */
+@source "./src/components/**/*.tsx";
+@source "./src/pages/**/*.tsx";
+```
+
+#### Excluding Content
+
+Use `not` to exclude patterns:
+
+```css
+/* Scan everything except test files */
+@source "./src/**/*.tsx";
+@source not "./src/**/*.test.tsx";
+
+/* Exclude inline content */
+@source not inline("some-class");
+```
+
+#### Inline Content
+
+```css
+/* Include specific classes */
+@source inline("bg-blue-500 text-white");
+```
+
+<Tip>
+The `@source` directive is useful when you need fine-grained control over content scanning, especially in monorepo setups or when integrating with specific frameworks.
+</Tip>
+
+## Combining Functions and Directives
+
+### Custom Component Pattern
+
+```css
+@theme {
+  --button-primary: #3b82f6;
+  --button-padding: 1rem;
+  --button-radius: 0.375rem;
+}
+
+.custom-button {
+  /* Use theme values */
+  background-color: theme(--button-primary);
+  padding: theme(--button-padding);
+  border-radius: theme(--button-radius);
+  
+  /* Apply utilities */
+  @apply font-semibold text-white;
+  @apply transition-colors duration-200;
+  
+  /* Custom hover with alpha */
+  &:hover {
+    background-color: --alpha(theme(--button-primary) / 90%);
+  }
+}
+```
+
+### Responsive Utilities
+
+```css
+@theme reference {
+  --breakpoint-md: 768px;
+}
+
+.responsive-grid {
+  display: grid;
+  gap: --spacing(4);
+  grid-template-columns: 1fr;
+  
+  @media (width >= theme(--breakpoint-md)) {
+    grid-template-columns: repeat(3, 1fr);
+    gap: --spacing(6);
+  }
+}
+```
+
+## Best Practices
+
+<Tip>
+**Recommendations:**
+
+1. **Theme Organization**: Group related theme values by namespace (colors, spacing, typography)
+2. **Reference Mode**: Use `@theme reference` for values only needed in calculations
+3. **Fallback Values**: Always provide fallbacks for critical theme values
+4. **@apply Sparingly**: Use `@apply` for extracting repeated patterns, not for everything
+5. **Inline Resolution**: Be aware of when theme values are inlined vs. remaining as CSS variables
+</Tip>
+
+## Source Code Reference
+
+The functions and directives are implemented in:
+- `/packages/tailwindcss/src/css-functions.ts` - CSS function implementations
+- `/packages/tailwindcss/src/apply.ts` - @apply directive
+- `/packages/tailwindcss/src/theme.ts` - Theme resolution
+- `/packages/tailwindcss/src/utilities.ts:174-191` - withAlpha helper

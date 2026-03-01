@@ -1,0 +1,309 @@
+---
+title: Upgrade Guide
+description: Learn how to upgrade to the latest version of Tailwind CSS
+---
+
+Tailwind CSS v4 represents a major leap forward with a completely rewritten engine, CSS-first configuration, and modern web platform features. This guide will help you upgrade your project smoothly.
+
+## Should you upgrade?
+
+Tailwind CSS v4 brings significant improvements:
+
+- **5x faster full builds** and over 100x faster incremental builds
+- **Zero configuration** with automatic content detection
+- **CSS-first configuration** using native CSS features
+- **Modern CSS features** like cascade layers, `@property`, and `color-mix()`
+- **First-party integrations** including a Vite plugin and CLI
+- **Modernized color palette** with P3 color support
+- **Container queries** and new 3D transforms built-in
+
+For new projects, v4 is the recommended choice. For existing projects, we provide automated tools to make migration straightforward.
+
+## Before you upgrade
+
+<Warning>
+**Important:** Make sure your git working directory is clean before upgrading. The upgrade tool will make extensive changes to your codebase.
+</Warning>
+
+### Prerequisites
+
+1. **Ensure you're on Tailwind CSS v3.x** - The upgrade tool only supports migrating from v3 to v4
+2. **Commit your changes** - The upgrade tool requires a clean git directory
+3. **Backup your project** - While the tool is robust, having a backup is always wise
+4. **Review your dependencies** - Some third-party plugins may need updates
+
+### Version compatibility
+
+The `@tailwindcss/upgrade` tool will verify that:
+
+- Your installed version matches your `package.json`
+- You're running Tailwind CSS v3.x (not v2 or earlier)
+- All dependencies are properly installed
+
+If there's a version mismatch, you'll see an error like:
+
+```bash
+Version mismatch
+
+- "tailwindcss": "^3.4.19" (expected version in package.json)
++ "tailwindcss": "3.4.19" (installed version in node_modules)
+
+Make sure to run pnpm install and try again.
+```
+
+## Migration approaches
+
+There are two ways to upgrade your project:
+
+### Automated upgrade (recommended)
+
+Use the `@tailwindcss/upgrade` tool to automatically migrate your entire project:
+
+```bash
+npx @tailwindcss/upgrade
+```
+
+This tool will:
+
+- Migrate CSS files from v3 syntax to v4
+- Convert JavaScript config files to CSS `@theme` blocks
+- Update all template files with renamed utilities
+- Install the latest Tailwind CSS packages
+- Update PostCSS configuration if needed
+
+See [Using the Upgrade Tool](/upgrading/codemods) for detailed information.
+
+### Manual upgrade
+
+For more control, you can upgrade manually:
+
+<Steps>
+
+### Install Tailwind CSS v4
+
+Update your dependencies to the latest version:
+
+```bash
+npm install tailwindcss@next @tailwindcss/postcss@next
+```
+
+### Update your CSS
+
+Replace your CSS imports with the new v4 syntax:
+
+```css
+/* Before (v3) */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* After (v4) */
+@import "tailwindcss";
+```
+
+### Migrate your configuration
+
+Convert your JavaScript config to CSS theme variables. See the [v3 to v4 Migration Guide](/upgrading/v3-to-v4) for specific breaking changes.
+
+### Update utility classes
+
+Rename utilities that have changed in v4 (see breaking changes section).
+
+### Test thoroughly
+
+Run your build and test all features to ensure everything works correctly.
+
+</Steps>
+
+## What the upgrade changes
+
+The upgrade process modifies:
+
+### CSS files
+
+- Converts `@tailwind` directives to `@import "tailwindcss"`
+- Migrates `@layer utilities` to `@utility` syntax
+- Converts `@apply` statements to use updated class names
+- Adds `@theme` blocks with your customizations
+- Updates `@import` statements to include `layer()` where needed
+
+### JavaScript configuration
+
+- Converts `tailwind.config.js` to CSS `@theme` blocks
+- Migrates theme customizations to CSS variables
+- Converts custom variants to `@custom-variant`
+- Handles plugin configurations
+- **Removes the config file** if fully migrated
+
+### Template files
+
+- Updates all renamed utility classes (see [v3 to v4 guide](/upgrading/v3-to-v4))
+- Migrates arbitrary values to named values where possible
+- Updates variant syntax to v4 conventions
+- Canonicalizes class names to their preferred form
+
+### Dependencies
+
+Updates these packages to their latest versions:
+
+- `tailwindcss`
+- `@tailwindcss/cli`
+- `@tailwindcss/postcss`
+- `@tailwindcss/vite`
+- `prettier-plugin-tailwindcss`
+
+## Common upgrade scenarios
+
+### Vite projects
+
+For Vite projects, the upgrade tool will:
+
+1. Install `@tailwindcss/vite`
+2. Update your Vite configuration
+3. Remove PostCSS config if no longer needed
+4. Update your CSS imports
+
+```js
+// vite.config.js
+import tailwindcss from '@tailwindcss/vite'
+
+export default {
+  plugins: [
+    tailwindcss(),
+  ],
+}
+```
+
+### PostCSS projects
+
+For PostCSS-based projects:
+
+1. Updates to use `@tailwindcss/postcss`
+2. Removes autoprefixer (now built-in)
+3. Updates PostCSS configuration
+
+### Next.js projects
+
+For Next.js:
+
+1. Updates CSS imports in your global stylesheet
+2. Migrates configuration to CSS
+3. Preserves Next.js-specific optimizations
+
+### Monorepo projects
+
+For monorepos:
+
+1. Supports multiple config files
+2. Handles workspace dependencies correctly
+3. Updates all packages that use Tailwind CSS
+
+## Verification steps
+
+After upgrading, verify everything works:
+
+<Steps>
+
+### Check build output
+
+Run your build process and ensure there are no errors:
+
+```bash
+npm run build
+```
+
+### Review visual changes
+
+Some utilities have slightly different outputs in v4. Check your UI:
+
+- Shadow utilities have new default values
+- Border radius values have changed
+- Blur utilities have new defaults
+
+### Test dark mode
+
+If using dark mode, ensure it still works correctly:
+
+```css
+@theme {
+  --color-*: initial; /* Your colors */
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-*: initial; /* Dark colors */
+  }
+}
+```
+
+### Check custom plugins
+
+If using third-party plugins, verify compatibility:
+
+- `@tailwindcss/forms` - Updated for v4
+- `@tailwindcss/typography` - Updated for v4
+- `@tailwindcss/aspect-ratio` - Now built-in
+- Other plugins may need updates
+
+</Steps>
+
+## Troubleshooting
+
+### Git directory not clean
+
+If you see "Git directory is not clean":
+
+```bash
+# Commit your changes first
+git add .
+git commit -m "Prepare for Tailwind CSS v4 upgrade"
+
+# Or use --force (not recommended)
+npx @tailwindcss/upgrade --force
+```
+
+### Version mismatch errors
+
+```bash
+# Ensure dependencies are installed
+npm install
+
+# Then try again
+npx @tailwindcss/upgrade
+```
+
+### Configuration not migrating
+
+Some configuration options can't be automatically migrated:
+
+- Complex plugin configurations
+- Custom variant functions
+- Dynamic theme values
+
+You'll need to manually convert these to CSS or JavaScript plugins.
+
+### Class names not updating
+
+If some class names aren't updated:
+
+1. Check if they're in ignored files (node_modules, etc.)
+2. Verify file extensions are recognized
+3. Look for dynamic class generation that can't be statically analyzed
+
+## Getting help
+
+If you encounter issues:
+
+- Check the [v3 to v4 Migration Guide](/upgrading/v3-to-v4) for breaking changes
+- Review the [Codemods documentation](/upgrading/codemods) for tool details
+- Visit the [GitHub Discussions](https://github.com/tailwindlabs/tailwindcss/discussions)
+- Report bugs on [GitHub Issues](https://github.com/tailwindlabs/tailwindcss/issues)
+
+## Next steps
+
+After upgrading:
+
+1. Review the [CHANGELOG](https://github.com/tailwindlabs/tailwindcss/blob/main/CHANGELOG.md) for new features
+2. Explore new utilities like container queries and 3D transforms
+3. Take advantage of CSS-first configuration for better IDE support
+4. Consider using the Vite plugin for optimal performance

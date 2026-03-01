@@ -1,0 +1,613 @@
+---
+title: Advanced Theming
+description: Create dynamic themes with CSS variables, @theme directive, and theme switching
+---
+
+## Overview
+
+Tailwind CSS v4 uses CSS variables (custom properties) for theming, enabling dynamic theme switching, dark mode, and customization without rebuilding your CSS.
+
+## Theme Architecture
+
+Tailwind v4's theme system is built on CSS variables defined in the `:root` selector.
+
+### Basic Theme Structure
+
+```css
+@theme {
+  /* Colors */
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --color-accent: #f59e0b;
+  
+  /* Spacing */
+  --spacing: 0.25rem;
+  
+  /* Typography */
+  --font-sans: system-ui, sans-serif;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+}
+```
+
+This generates:
+
+```css
+:root, :host {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --color-accent: #f59e0b;
+  --spacing: .25rem;
+  --font-sans: system-ui, sans-serif;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+}
+```
+
+<Note>
+Tailwind applies theme variables to both `:root` and `:host` to support Web Components.
+</Note>
+
+## Reference Mode
+
+Use `@theme reference` for values that shouldn't be output as CSS variables:
+
+```css
+@theme reference {
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+}
+```
+
+These values are used in calculations and media queries but aren't emitted as CSS variables:
+
+```css
+/* No CSS variables generated */
+/* Values are inlined where needed */
+@media (min-width: 768px) {
+  /* ... */
+}
+```
+
+<Tip>
+Use reference mode for:
+- Breakpoints (used in media queries)
+- Intermediate calculation values
+- Legacy compatibility values
+- Values only used in build-time calculations
+</Tip>
+
+## Theme Namespaces
+
+Theme values are organized by namespace prefixes:
+
+### Color Namespace
+
+```css
+@theme {
+  /* Blue palette */
+  --color-blue-50: #eff6ff;
+  --color-blue-100: #dbeafe;
+  --color-blue-200: #bfdbfe;
+  --color-blue-500: #3b82f6;
+  --color-blue-900: #1e3a8a;
+  
+  /* Semantic colors */
+  --color-primary: var(--color-blue-500);
+  --color-danger: #ef4444;
+  --color-success: #10b981;
+}
+```
+
+Utilities look up colors with the `--color-` prefix:
+
+```html
+<div class="bg-blue-500 text-primary">
+  <!-- Resolves --color-blue-500 and --color-primary -->
+</div>
+```
+
+### Spacing Namespace
+
+```css
+@theme {
+  --spacing: 0.25rem;
+  
+  /* Specific spacing values */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+}
+```
+
+The base `--spacing` value is used for bare number utilities:
+
+```html
+<div class="p-4">
+  <!-- 4 * var(--spacing) = 4 * 0.25rem = 1rem -->
+</div>
+
+<div class="m-lg">
+  <!-- Uses var(--spacing-lg) = 1.5rem -->
+</div>
+```
+
+### Typography Namespace
+
+```css
+@theme {
+  /* Font sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  
+  /* Line heights */
+  --text-xs--line-height: 1rem;
+  --text-sm--line-height: 1.25rem;
+  --text-base--line-height: 1.5rem;
+  
+  /* Font families */
+  --font-sans: system-ui, sans-serif;
+  --font-serif: 'Georgia', serif;
+  --font-mono: 'Courier New', monospace;
+}
+```
+
+### Other Namespaces
+
+```css
+@theme {
+  /* Breakpoints */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  
+  /* Border radius */
+  --radius: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+  
+  /* Z-index */
+  --z-index-dropdown: 1000;
+  --z-index-modal: 1050;
+  --z-index-tooltip: 1100;
+  
+  /* Container widths */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+}
+```
+
+## Dynamic Theme Switching
+
+Because Tailwind v4 uses CSS variables, you can switch themes dynamically with JavaScript or additional CSS.
+
+### Multiple Color Schemes
+
+```css
+@theme {
+  /* Default (light) theme */
+  --color-background: white;
+  --color-text: #1f2937;
+  --color-border: #e5e7eb;
+}
+
+/* Dark theme */
+:root[data-theme="dark"] {
+  --color-background: #1f2937;
+  --color-text: white;
+  --color-border: #374151;
+}
+
+/* High contrast theme */
+:root[data-theme="high-contrast"] {
+  --color-background: black;
+  --color-text: white;
+  --color-border: white;
+}
+```
+
+```html
+<div class="bg-[var(--color-background)] text-[var(--color-text)]">
+  Content adapts to the active theme
+</div>
+```
+
+```javascript
+// Switch themes
+document.documentElement.setAttribute('data-theme', 'dark');
+```
+
+### Component-Level Themes
+
+```css
+@theme {
+  --button-bg: var(--color-blue-500);
+  --button-text: white;
+}
+
+.theme-danger {
+  --button-bg: var(--color-red-500);
+}
+
+.theme-success {
+  --button-bg: var(--color-green-500);
+}
+```
+
+```html
+<div class="theme-danger">
+  <button class="bg-[var(--button-bg)] text-[var(--button-text)]">
+    Danger Button
+  </button>
+</div>
+```
+
+## Dark Mode
+
+Tailwind v4's dark mode is implemented using CSS variables and the `dark:` variant.
+
+### Default Dark Mode
+
+The default implementation uses `prefers-color-scheme`:
+
+```css
+/* From variants.ts:1143 */
+staticVariant('dark', ['@media (prefers-color-scheme: dark)'])
+```
+
+Usage:
+
+```html
+<div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+  Automatically adapts to system preference
+</div>
+```
+
+### Custom Dark Mode Implementation
+
+Override the dark variant for class-based dark mode:
+
+```css
+@custom-variant dark (&:is([data-theme='dark'] *));
+```
+
+Or using a class:
+
+```css
+@custom-variant dark (&:is(.dark *));
+```
+
+```html
+<html class="dark">
+  <body>
+    <div class="bg-white dark:bg-gray-900">
+      Controlled by .dark class
+    </div>
+  </body>
+</html>
+```
+
+### Per-Component Dark Mode
+
+```css
+@theme {
+  --card-bg: white;
+  --card-text: #1f2937;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card-bg: #1f2937;
+    --card-text: white;
+  }
+}
+```
+
+```html
+<div class="bg-[var(--card-bg)] text-[var(--card-text)]">
+  Card content
+</div>
+```
+
+## Semantic Color Systems
+
+Create semantic color systems that can be themed:
+
+```css
+@theme {
+  /* Brand colors */
+  --color-brand-primary: #3b82f6;
+  --color-brand-secondary: #8b5cf6;
+  
+  /* Semantic colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+  
+  /* Surface colors */
+  --color-surface-base: white;
+  --color-surface-raised: #f9fafb;
+  --color-surface-overlay: white;
+  
+  /* Text colors */
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-disabled: #9ca3af;
+  
+  /* Border colors */
+  --color-border-default: #e5e7eb;
+  --color-border-strong: #d1d5db;
+}
+```
+
+```html
+<button class="bg-success text-white">
+  Success Button
+</button>
+
+<div class="bg-surface-raised border-border-default">
+  Raised surface
+</div>
+```
+
+## Scoped Themes
+
+Create themes scoped to specific sections:
+
+```css
+@theme {
+  --theme-primary: #3b82f6;
+  --theme-secondary: #8b5cf6;
+}
+
+.theme-marketing {
+  --theme-primary: #f59e0b;
+  --theme-secondary: #ef4444;
+}
+
+.theme-dashboard {
+  --theme-primary: #10b981;
+  --theme-secondary: #06b6d4;
+}
+```
+
+```html
+<div class="theme-marketing">
+  <button class="bg-[var(--theme-primary)]">
+    Marketing CTA
+  </button>
+</div>
+
+<div class="theme-dashboard">
+  <button class="bg-[var(--theme-primary)]">
+    Dashboard Action
+  </button>
+</div>
+```
+
+## Theme Resolution
+
+Understanding how Tailwind resolves theme values:
+
+### Resolution Order
+
+From `theme.ts`, theme resolution follows this order:
+
+1. Check the exact key in the specified namespace
+2. Check bare key (without namespace prefix)
+3. Return null if not found
+
+```typescript
+// Simplified from theme.ts
+resolve(key: string | null, namespaces: ThemeKey[]): string | null {
+  for (let namespace of namespaces) {
+    // Try namespace + key
+    let value = this.get([namespace, key])
+    if (value !== null) return value
+  }
+  
+  // Try bare key
+  if (key === null) {
+    for (let namespace of namespaces) {
+      let value = this.get([namespace])
+      if (value !== null) return value
+    }
+  }
+  
+  return null
+}
+```
+
+### Inline vs. Variable Resolution
+
+```css
+/* Variable resolution (default) */
+.text-blue-500 {
+  color: var(--color-blue-500);
+}
+
+/* Inline resolution (in media queries) */
+@media (width >= theme(--breakpoint-md)) {
+  /* Value is inlined: @media (width >= 768px) */
+}
+```
+
+## Theme Functions
+
+Access theme values using the `theme()` function:
+
+```css
+.custom-component {
+  /* Access theme value as CSS variable */
+  padding: theme(--spacing);
+  
+  /* Force inline resolution */
+  padding: theme(--spacing inline);
+  
+  /* With fallback */
+  color: theme(--color-primary, blue);
+}
+```
+
+<Warning>
+The `theme()` function only works with CSS variable names (prefixed with `--`). It cannot access nested dot-notation paths from v3.
+</Warning>
+
+## Performance Considerations
+
+### CSS Variable Performance
+
+CSS variables have excellent performance characteristics:
+
+- Variables are resolved at runtime (no recompilation needed)
+- Inheritance is efficient (browsers optimize this)
+- Theme switching is instant (just update the variable value)
+- No JavaScript required for theme switching
+
+### When to Use Reference Mode
+
+Use `@theme reference` to:
+
+1. Reduce CSS output size
+2. Avoid polluting the global CSS variable scope
+3. Prevent values from being overridden
+4. Keep intermediate calculation values private
+
+```css
+/* These values don't need to be CSS variables */
+@theme reference {
+  --breakpoint-sm: 640px;
+  --spacing-multiplier: 0.25;
+  --golden-ratio: 1.618;
+}
+```
+
+## Migration from v3
+
+### Config to @theme
+
+Tailwind v3 config:
+
+```javascript
+// tailwind.config.js (v3)
+module.exports = {
+  theme: {
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#8b5cf6',
+    },
+    spacing: {
+      xs: '0.5rem',
+      sm: '0.75rem',
+    }
+  }
+}
+```
+
+Tailwind v4 theme:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 0.75rem;
+}
+```
+
+### Accessing Theme in CSS
+
+v3 approach:
+
+```css
+/* v3 - theme() function with dot notation */
+.custom {
+  color: theme('colors.blue.500');
+}
+```
+
+v4 approach:
+
+```css
+/* v4 - CSS variables or theme() with -- prefix */
+.custom {
+  color: var(--color-blue-500);
+  /* or */
+  color: theme(--color-blue-500);
+}
+```
+
+## Best Practices
+
+<Tip>
+**Recommendations:**
+
+1. **Semantic Naming**: Use semantic names (--color-primary) over specific names (--color-blue-500)
+2. **Consistent Prefixes**: Follow Tailwind's namespace conventions (--color-, --spacing-, etc.)
+3. **Reference Mode**: Use for values that don't need to be CSS variables
+4. **Theme Composition**: Build complex themes by referencing simpler ones
+5. **Documentation**: Document your theme structure for team members
+6. **Testing**: Test theme switching across all components
+</Tip>
+
+## Examples
+
+### Complete Multi-Theme System
+
+```css
+@theme {
+  /* Base variables */
+  --spacing: 0.25rem;
+  --font-sans: system-ui, sans-serif;
+  
+  /* Light theme (default) */
+  --color-background: white;
+  --color-surface: #f9fafb;
+  --color-text: #1f2937;
+  --color-text-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-primary: #3b82f6;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #0f172a;
+    --color-surface: #1e293b;
+    --color-text: white;
+    --color-text-muted: #94a3b8;
+    --color-border: #334155;
+    --color-primary: #60a5fa;
+  }
+}
+
+/* High contrast theme */
+:root[data-theme="high-contrast"] {
+  --color-background: black;
+  --color-surface: #1a1a1a;
+  --color-text: white;
+  --color-text-muted: #e5e5e5;
+  --color-border: white;
+  --color-primary: #00ff00;
+}
+```
+
+## Source Code Reference
+
+The theming system is implemented in:
+- `/packages/tailwindcss/src/theme.ts` - Theme class and resolution
+- `/packages/tailwindcss/src/css-functions.ts:68-127` - theme() function
+- `/packages/tailwindcss/src/variants.ts:1143` - dark variant

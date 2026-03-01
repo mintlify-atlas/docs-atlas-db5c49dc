@@ -1,0 +1,328 @@
+---
+title: Installation
+description: Install Tailwind CSS in your project using npm, yarn, or pnpm
+---
+
+# Installing Tailwind CSS
+
+Tailwind CSS v4 can be installed in several ways depending on your build tool and project setup. Choose the method that works best for your workflow.
+
+## Package Installation
+
+Install Tailwind CSS from npm using your preferred package manager:
+
+<CodeGroup>
+
+```bash npm
+npm install tailwindcss@latest
+```
+
+```bash yarn
+yarn add tailwindcss@latest
+```
+
+```bash pnpm
+pnpm add tailwindcss@latest
+```
+
+</CodeGroup>
+
+<Note>
+  Tailwind CSS v4.2.1 is the latest stable version. The framework requires Node.js 14.0 or higher.
+</Note>
+
+## Integration Methods
+
+Tailwind CSS can be integrated into your project in multiple ways. Choose the method that best fits your build setup.
+
+### Using the CLI
+
+The Tailwind CLI is the simplest way to compile your CSS. Install the CLI package:
+
+<CodeGroup>
+
+```bash npm
+npm install @tailwindcss/cli@latest
+```
+
+```bash yarn
+yarn add @tailwindcss/cli@latest
+```
+
+```bash pnpm
+pnpm add @tailwindcss/cli@latest
+```
+
+</CodeGroup>
+
+Then add a build script to your `package.json`:
+
+```json package.json
+{
+  "scripts": {
+    "build:css": "tailwindcss --input ./src/input.css --output ./dist/output.css",
+    "watch:css": "tailwindcss --input ./src/input.css --output ./dist/output.css --watch"
+  }
+}
+```
+
+<Tip>
+  Use the `--watch` flag during development to automatically rebuild your CSS when files change.
+</Tip>
+
+### CLI Options
+
+The Tailwind CLI supports several options:
+
+| Option | Alias | Description | Default |
+|--------|-------|-------------|----------|
+| `--input` | `-i` | Input CSS file | - |
+| `--output` | `-o` | Output CSS file | `-` (stdout) |
+| `--watch` | `-w` | Watch for changes and rebuild | `false` |
+| `--minify` | `-m` | Optimize and minify the output | `false` |
+| `--optimize` | - | Optimize without minifying | `false` |
+| `--map` | - | Generate source map | `false` |
+| `--cwd` | - | Current working directory | `.` |
+
+### Using with Vite
+
+For Vite projects, install the Vite plugin:
+
+<CodeGroup>
+
+```bash npm
+npm install @tailwindcss/vite@latest
+```
+
+```bash yarn
+yarn add @tailwindcss/vite@latest
+```
+
+```bash pnpm
+pnpm add @tailwindcss/vite@latest
+```
+
+</CodeGroup>
+
+Add the plugin to your `vite.config.ts`:
+
+```typescript vite.config.ts
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [tailwindcss()],
+})
+```
+
+<Note>
+  The Vite plugin automatically detects whether to optimize CSS based on the `NODE_ENV` environment variable.
+</Note>
+
+#### Vite Plugin Options
+
+You can configure the Vite plugin with additional options:
+
+```typescript vite.config.ts
+import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  plugins: [
+    tailwindcss({
+      // Disable Lightning CSS optimization
+      optimize: false,
+      
+      // Or enable optimization without minification
+      optimize: { minify: false },
+    }),
+  ],
+})
+```
+
+### Using with PostCSS
+
+For PostCSS-based build tools (like Next.js), install the PostCSS plugin:
+
+<CodeGroup>
+
+```bash npm
+npm install @tailwindcss/postcss@latest
+```
+
+```bash yarn
+yarn add @tailwindcss/postcss@latest
+```
+
+```bash pnpm
+pnpm add @tailwindcss/postcss@latest
+```
+
+</CodeGroup>
+
+Add Tailwind to your `postcss.config.js`:
+
+```javascript postcss.config.js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+  },
+}
+```
+
+<Tip>
+  The PostCSS plugin includes built-in `@import` handling, so you don't need `postcss-import`.
+</Tip>
+
+#### PostCSS Plugin Options
+
+Configure the PostCSS plugin with options:
+
+```javascript postcss.config.js
+const path = require('path')
+
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {
+      // Change source file search directory
+      base: path.resolve(__dirname, './src'),
+      
+      // Control Lightning CSS optimization
+      optimize: process.env.NODE_ENV === 'production',
+      
+      // Control URL rewriting
+      transformAssetUrls: true,
+    },
+  },
+}
+```
+
+### Using with Webpack
+
+For Webpack projects, install the Webpack plugin:
+
+<CodeGroup>
+
+```bash npm
+npm install @tailwindcss/webpack@latest
+```
+
+```bash yarn
+yarn add @tailwindcss/webpack@latest
+```
+
+```bash pnpm
+pnpm add @tailwindcss/webpack@latest
+```
+
+</CodeGroup>
+
+## Create Your CSS File
+
+Create a CSS file that imports Tailwind's styles:
+
+<CodeGroup>
+
+```css src/input.css (Full Import)
+@import 'tailwindcss';
+```
+
+```css src/input.css (Layered Import)
+@layer theme, base, components, utilities;
+
+@import './theme.css' layer(theme);
+@import './preflight.css' layer(base);
+@import './utilities.css' layer(utilities);
+```
+
+```css src/input.css (Custom Styles)
+@import 'tailwindcss';
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded font-semibold;
+  }
+}
+```
+
+</CodeGroup>
+
+<Note>
+  The `@import 'tailwindcss';` statement imports all of Tailwind's base styles, utilities, and default theme. This is the simplest way to get started.
+</Note>
+
+## Import the CSS
+
+Import your compiled CSS file in your application:
+
+<CodeGroup>
+
+```html HTML
+<!doctype html>
+<html>
+  <head>
+    <link href="/dist/output.css" rel="stylesheet">
+  </head>
+  <body>
+    <!-- Your content -->
+  </body>
+</html>
+```
+
+```javascript JavaScript/React
+import './output.css'
+```
+
+```typescript TypeScript
+import './output.css'
+```
+
+</CodeGroup>
+
+## Platform-Specific Packages
+
+Tailwind CSS provides optimized native binaries for different platforms:
+
+- `@tailwindcss/node` - Node.js runtime
+- `@tailwindcss/browser` - Browser runtime (WASM)
+- `@tailwindcss/oxide` - Rust-powered scanning engine
+
+<Warning>
+  These platform-specific packages are typically installed automatically as dependencies. You rarely need to install them directly.
+</Warning>
+
+## Next Steps
+
+<Steps>
+  <Step title="Quick Start Guide">
+    Follow the [quickstart guide](/quickstart) to build your first component with Tailwind CSS.
+  </Step>
+  <Step title="Editor Setup">
+    Set up [IntelliSense in your editor](/editor-setup) for autocomplete and linting.
+  </Step>
+  <Step title="Learn Core Concepts">
+    Understand Tailwind's [utility-first approach](/core-concepts/utility-first) and design philosophy.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+### CSS Not Updating
+
+If your CSS isn't updating when you make changes:
+
+1. Ensure you're using the `--watch` flag with the CLI
+2. Check that your source files are in the correct directory
+3. Restart your development server
+
+### Build Performance
+
+For faster builds in large projects:
+
+- Use the `@tailwindcss/oxide` scanner (included by default in v4)
+- Limit the scope of source file scanning with `@source` directives
+- Enable Lightning CSS optimization only in production
+
+<Tip>
+  Tailwind CSS v4's new Rust-powered engine provides up to 10x faster builds compared to v3.
+</Tip>

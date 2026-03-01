@@ -1,0 +1,592 @@
+---
+title: Webpack Loader
+description: Complete API reference for the @tailwindcss/webpack loader
+---
+
+The `@tailwindcss/webpack` loader integrates Tailwind CSS v4 into webpack projects with automatic CSS generation, caching, and optimization.
+
+## Installation
+
+```bash
+npm install @tailwindcss/webpack
+```
+
+## Basic Usage
+
+```js webpack.config.js
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+
+module.exports = {
+  plugins: [new MiniCssExtractPlugin()],
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          '@tailwindcss/webpack',
+        ],
+      },
+    ],
+  },
+}
+```
+
+Then create a CSS file that imports Tailwind:
+
+```css src/index.css
+@import 'tailwindcss';
+```
+
+## Loader Options
+
+The webpack loader accepts an options object to customize its behavior.
+
+### Type Definition
+
+```ts
+export interface LoaderOptions {
+  /**
+   * The base directory to scan for class candidates.
+   *
+   * Defaults to the current working directory.
+   */
+  base?: string
+
+  /**
+   * Optimize and minify the output CSS.
+   */
+  optimize?: boolean | { minify?: boolean }
+}
+```
+
+### Configuration
+
+<ParamField path="base" type="string">
+  The base directory to scan for class candidates. The scanner will look for source files relative to this path.
+  
+  **Default:** `process.cwd()`
+</ParamField>
+
+<ParamField path="optimize" type="boolean | { minify?: boolean }">
+  Controls CSS optimization using Lightning CSS. By default, optimization is enabled in production (when `NODE_ENV=production`).
+  
+  - `true` - Enable optimization and minification
+  - `false` - Disable optimization completely
+  - `{ minify: false }` - Enable optimization but disable minification
+  
+  **Default:** `process.env.NODE_ENV === 'production'`
+</ParamField>
+
+## Examples
+
+### Custom Base Directory
+
+Change where the loader searches for source files:
+
+```js webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          {
+            loader: '@tailwindcss/webpack',
+            options: {
+              base: process.cwd(),
+            },
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+### Disable Optimization
+
+Keep CSS unoptimized for easier debugging:
+
+```js webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          {
+            loader: '@tailwindcss/webpack',
+            options: {
+              optimize: false,
+            },
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+### Optimization Without Minification
+
+Use Lightning CSS for vendor prefixing but keep output readable:
+
+```js webpack.config.js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+          MiniCssExtractPlugin.loader,
+          'css-loader',
+          {
+            loader: '@tailwindcss/webpack',
+            options: {
+              optimize: { minify: false },
+            },
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+## Loader Architecture
+
+The webpack loader is implemented as an asynchronous loader function that processes CSS files.
+
+### Function Signature
+
+```ts
+export default async function tailwindLoader(
+  this: LoaderContext<LoaderOptions>,
+  source: string,
+): Promise<void>
+```
+
+**Parameters:**
+- `this` - Webpack loader context with methods and properties
+- `source` - Raw CSS content as a string
+
+**Returns:**
+- Calls `callback(error, result)` asynchronously
+- Never returns a value directly
+
+## Internal Behavior
+
+### Caching Strategy
+
+The loader uses an LRU cache (max 50 entries) to store compilation state across builds:
+
+```ts
+interface CacheEntry {
+  mtimes: Map<string, number>          // File modification times
+  compiler: Awaited<ReturnType<typeof compile>> | null
+  scanner: Scanner | null
+  candidates: Set<string>              // Accumulated class candidates
+  fullRebuildPaths: string[]           // Dependencies requiring rebuild
+}
+```
+
+**Cache Key Format:**
+```
+{inputFile}:{base}:{JSON.stringify(optimize)}
+```
+
+### Compilation Process
+
+1. **Quick Bail Check:**
+   - Test for Tailwind at-rules using regex
+   - Exit early if no Tailwind directives found
+   - Improves performance for non-Tailwind CSS
+
+2. **Context Retrieval:**
+   - Get or create cache entry for input file
+   - Determine if this is initial build or rebuild
+
+3. **Compiler Setup:**
+   - Create compiler if needed
+   - Clear require cache for changed dependencies
+   - Configure with file path and base directory
+   - Enable URL rewriting for asset paths
+
+4. **Rebuild Detection:**
+   - Compare file modification times
+   - Trigger full rebuild if dependencies changed
+   - Otherwise perform incremental build
+
+5. **Scanner Setup:**
+   - Initialize scanner with source patterns
+   - Configure based on `@source` directives
+   - Default to `{base}/**/*` if no root specified
+
+6. **Candidate Scanning:**
+   - Scan source files for class names
+   - Accumulate candidates in Set
+   - Register files as dependencies with webpack
+
+7. **CSS Building:**
+   - Build CSS from accumulated candidates
+   - Apply optimizations if enabled
+   - Return generated CSS via callback
+
+### Webpack Integration
+
+The loader integrates with webpack's dependency tracking:
+
+**File Dependencies:**
+```ts
+this.addDependency('/absolute/path/to/file')
+```
+
+Registers individual files (config, plugins, source files) as dependencies. Changes trigger rebuild.
+
+**Context Dependencies:**
+```ts
+this.addContextDependency('/absolute/path/to/directory')
+```
+
+Registers directories for glob pattern watching. Changes to files matching patterns trigger rebuild.
+
+### Quick Bail Optimization
+
+Before processing, the loader checks for Tailwind-specific syntax:
+
+```ts
+const TAILWIND_PATTERN = /@(import|reference|theme|variant|config|plugin|apply|tailwind)\b/
+```
+
+If the pattern doesn't match, the source is returned unchanged, avoiding compilation overhead.
+
+### Rebuild Strategy
+
+The loader determines whether a full rebuild is needed:
+
+**Full Rebuild Triggers:**
+- Config file changes (detected via mtime)
+- Plugin file changes
+- Imported CSS changes
+- Input CSS file changes
+- Previous build errors
+
+**Incremental Rebuild:**
+- Only new candidates are added
+- Compiler and scanner are reused
+- Significantly faster for large projects
+
+## CSS Module Support
+
+The loader automatically detects CSS Module files and adjusts polyfills:
+
+```ts
+const isCSSModuleFile = inputFile.endsWith('.module.css')
+const polyfills = isCSSModuleFile 
+  ? Polyfills.All ^ Polyfills.AtProperty 
+  : Polyfills.All
+```
+
+This prevents global `*` rules from `@property` polyfills that would cause build failures in CSS Modules.
+
+## Source Validation
+
+The loader validates `@source` directive paths:
+
+```ts
+if (root !== 'none' && root !== null) {
+  let basePath = path.resolve(root.base, root.pattern)
+  let stats = fs.statSync(basePath)
+  
+  if (!stats.isDirectory()) {
+    throw new Error(
+      `The path given to \`source(…)\` must be a directory but got \`source(${basePath})\` instead.`
+    )
+  }
+}
+```
+
+Ensures source paths are directories, not files.
+
+## Error Handling
+
+The loader implements comprehensive error handling:
+
+### Compilation Errors
+
+```ts
+try {
+  // Compilation logic
+} catch (error) {
+  // Clear cache on error
+  cache.delete(cacheKey)
+  
+  // Report error to webpack
+  callback(error as Error)
+}
+```
+
+**Error Recovery:**
+- Cache entry is deleted to force full rebuild
+- Error is passed to webpack for reporting
+- Next build will start fresh
+
+### Dependency Tracking on Error
+
+Even when compilation fails, dependencies are still registered:
+
+```ts
+for (let file of context.fullRebuildPaths) {
+  this.addDependency(path.resolve(file))
+}
+```
+
+This ensures changes to config files trigger rebuilds even after errors.
+
+## Optimization Pipeline
+
+When optimization is enabled:
+
+```ts
+if (shouldOptimize) {
+  let optimized = optimize(css, {
+    minify: typeof shouldOptimize === 'object' 
+      ? shouldOptimize.minify 
+      : true,
+  })
+  result = optimized.code
+}
+```
+
+**Lightning CSS Processing:**
+1. Vendor prefix addition
+2. Modern CSS syntax transformation
+3. Optional minification
+4. Dead code elimination
+
+## Loader Context
+
+The loader uses these webpack context methods:
+
+<ResponseField name="async()" type="function">
+  Gets async callback for returning results
+  
+  ```ts
+  const callback = this.async()
+  callback(null, css) // Success
+  callback(error)     // Error
+  ```
+</ResponseField>
+
+<ResponseField name="getOptions()" type="function">
+  Retrieves loader options from webpack config
+  
+  ```ts
+  const options = this.getOptions() ?? {}
+  ```
+</ResponseField>
+
+<ResponseField name="resourcePath" type="string">
+  Absolute path to the resource being loaded
+  
+  ```ts
+  const inputFile = this.resourcePath
+  // "/project/src/styles/main.css"
+  ```
+</ResponseField>
+
+<ResponseField name="addDependency()" type="function">
+  Registers file dependency for watching
+  
+  ```ts
+  this.addDependency('/path/to/config.js')
+  ```
+</ResponseField>
+
+<ResponseField name="addContextDependency()" type="function">
+  Registers directory dependency for watching
+  
+  ```ts
+  this.addContextDependency('/path/to/src')
+  ```
+</ResponseField>
+
+## TypeScript Support
+
+The loader includes full TypeScript definitions:
+
+```ts
+import type { LoaderOptions } from '@tailwindcss/webpack'
+
+const config = {
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: [
+          'style-loader',
+          'css-loader',
+          {
+            loader: '@tailwindcss/webpack',
+            options: {
+              base: './src',
+              optimize: true,
+            } satisfies LoaderOptions,
+          },
+        ],
+      },
+    ],
+  },
+}
+```
+
+## Performance Optimizations
+
+### Incremental Scanning
+
+- Candidates accumulate across rebuilds
+- Scanner state persisted between builds
+- Only changed files trigger rescanning
+
+### Require Cache Management
+
+```ts
+if (context.fullRebuildPaths.length > 0 && !isInitialBuild) {
+  clearRequireCache(context.fullRebuildPaths)
+}
+```
+
+Clears Node.js require cache only for changed files, avoiding full cache invalidation.
+
+### Lazy Initialization
+
+- Compiler created on first CSS file
+- Scanner initialized when needed
+- Candidates accumulated incrementally
+
+## Compatibility
+
+- **webpack:** 5.0.0 or higher
+- **Node.js:** 18.0.0 or higher
+- **Tailwind CSS:** v4.0.0 or higher
+
+## Framework Integration
+
+### Next.js
+
+Next.js uses webpack internally:
+
+```js next.config.js
+module.exports = {
+  webpack: (config) => {
+    config.module.rules.push({
+      test: /\.css$/,
+      use: [
+        'style-loader',
+        'css-loader',
+        '@tailwindcss/webpack',
+      ],
+    })
+    return config
+  },
+}
+```
+
+### Create React App
+
+With CRACO or eject:
+
+```js craco.config.js
+module.exports = {
+  webpack: {
+    configure: (config) => {
+      const cssRule = config.module.rules.find(
+        rule => rule.test?.toString().includes('css')
+      )
+      
+      if (cssRule) {
+        cssRule.use.push('@tailwindcss/webpack')
+      }
+      
+      return config
+    },
+  },
+}
+```
+
+### Vue CLI
+
+```js vue.config.js
+module.exports = {
+  chainWebpack: (config) => {
+    config.module
+      .rule('css')
+      .use('@tailwindcss/webpack')
+      .loader('@tailwindcss/webpack')
+      .options({
+        base: './src',
+      })
+  },
+}
+```
+
+## Debugging
+
+Enable debug logging with the `DEBUG` environment variable:
+
+```bash
+DEBUG=1 webpack
+```
+
+Debug output includes timing for:
+- Quick bail checks
+- Compiler setup
+- Scanner initialization
+- Candidate scanning
+- CSS building
+- Optimization passes
+- Dependency registration
+
+## Common Issues
+
+### Loader Order
+
+Ensure `@tailwindcss/webpack` runs before `css-loader`:
+
+```js
+// Correct order (loaders run right-to-left)
+use: [
+  MiniCssExtractPlugin.loader,
+  'css-loader',           // Processes CSS after Tailwind
+  '@tailwindcss/webpack', // Generates Tailwind CSS first
+]
+
+// Wrong order
+use: [
+  MiniCssExtractPlugin.loader,
+  '@tailwindcss/webpack', // Too early!
+  'css-loader',
+]
+```
+
+### Missing Dependencies
+
+The loader doesn't install webpack or css-loader:
+
+```bash
+npm install --save-dev webpack css-loader mini-css-extract-plugin
+```
+
+### Cache Issues
+
+If builds seem stale, clear webpack's cache:
+
+```bash
+rm -rf node_modules/.cache/webpack
+```

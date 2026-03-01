@@ -1,0 +1,245 @@
+---
+title: "CLI"
+description: "Use the Tailwind CSS CLI to build and watch your stylesheets"
+---
+
+The Tailwind CSS CLI is a standalone tool that compiles your Tailwind CSS files without requiring any build tool configuration. It's the simplest way to get started with Tailwind CSS.
+
+## Installation
+
+Install the `@tailwindcss/cli` package globally or in your project:
+
+<CodeGroup>
+
+```bash npm
+npm install -D @tailwindcss/cli
+```
+
+```bash pnpm
+pnpm add -D @tailwindcss/cli
+```
+
+```bash yarn
+yarn add -D @tailwindcss/cli
+```
+
+```bash bun
+bun add -D @tailwindcss/cli
+```
+
+</CodeGroup>
+
+## Basic Usage
+
+The CLI processes your CSS files and generates the output with all Tailwind utilities:
+
+```bash
+tailwindcss --input input.css --output output.css
+```
+
+If you don't specify an input file, the CLI will use a default input that imports Tailwind CSS:
+
+```bash
+tailwindcss --output output.css
+```
+
+## Watch Mode
+
+Use watch mode to automatically rebuild your CSS when files change:
+
+```bash
+tailwindcss --input input.css --output output.css --watch
+```
+
+The watch mode monitors your content files and rebuilds the CSS whenever it detects changes. By default, it stops when stdin is closed. Use `--watch=always` to keep watching even when stdin closes:
+
+```bash
+tailwindcss --input input.css --output output.css --watch=always
+```
+
+## Input and Output
+
+### Using stdin and stdout
+
+You can pipe CSS through the CLI using stdin and stdout:
+
+```bash
+echo "@import 'tailwindcss';" | tailwindcss > output.css
+```
+
+Or use the `-` flag explicitly:
+
+```bash
+tailwindcss --input - --output - < input.css > output.css
+```
+
+### Specifying Files
+
+Use the `--input` and `--output` flags to specify file paths:
+
+```bash
+tailwindcss --input ./src/styles.css --output ./dist/output.css
+```
+
+You can also use the short aliases:
+
+```bash
+tailwindcss -i ./src/styles.css -o ./dist/output.css
+```
+
+## Optimization
+
+### Minification
+
+Optimize and minify your output for production:
+
+```bash
+tailwindcss --input input.css --output output.css --minify
+```
+
+This will remove unnecessary whitespace and optimize the CSS using Lightning CSS.
+
+### Optimization Without Minification
+
+If you want to optimize the CSS without minifying it:
+
+```bash
+tailwindcss --input input.css --output output.css --optimize
+```
+
+## Source Maps
+
+### Inline Source Maps
+
+Generate inline source maps for debugging:
+
+```bash
+tailwindcss --input input.css --output output.css --map
+```
+
+### External Source Maps
+
+Write source maps to a separate file:
+
+```bash
+tailwindcss --input input.css --output output.css --map output.css.map
+```
+
+The CLI will add a source map comment to your CSS file pointing to the external map file.
+
+## Working Directory
+
+Specify the current working directory for relative paths:
+
+```bash
+tailwindcss --input input.css --output output.css --cwd ./src
+```
+
+## Command Reference
+
+### Options
+
+<ResponseField name="--input" type="string">
+  Input CSS file path. Use `-` for stdin. Defaults to a built-in CSS file that imports Tailwind.
+  
+  **Alias:** `-i`
+</ResponseField>
+
+<ResponseField name="--output" type="string">
+  Output CSS file path. Use `-` for stdout.
+  
+  **Alias:** `-o`
+  
+  **Default:** `-` (stdout)
+</ResponseField>
+
+<ResponseField name="--watch" type="boolean | 'always'">
+  Watch for changes and rebuild as needed. Use `always` to keep watching when stdin is closed.
+  
+  **Alias:** `-w`
+</ResponseField>
+
+<ResponseField name="--minify" type="boolean">
+  Optimize and minify the output CSS.
+  
+  **Alias:** `-m`
+</ResponseField>
+
+<ResponseField name="--optimize" type="boolean">
+  Optimize the output without minifying.
+</ResponseField>
+
+<ResponseField name="--cwd" type="string">
+  The current working directory for resolving relative paths.
+  
+  **Default:** `.` (current directory)
+</ResponseField>
+
+<ResponseField name="--map" type="boolean | string">
+  Generate a source map. Pass `true` for inline maps or a file path for external maps.
+  
+  **Default:** `false`
+</ResponseField>
+
+<ResponseField name="--help" type="boolean">
+  Display usage information.
+  
+  **Alias:** `-h`
+</ResponseField>
+
+## Examples
+
+### Development Build
+
+Build with watch mode and source maps for development:
+
+```bash
+tailwindcss -i ./src/input.css -o ./dist/output.css --watch --map
+```
+
+### Production Build
+
+Build with minification for production:
+
+```bash
+tailwindcss -i ./src/input.css -o ./dist/output.css --minify
+```
+
+### Using with npm scripts
+
+Add scripts to your `package.json`:
+
+```json
+{
+  "scripts": {
+    "dev": "tailwindcss -i ./src/input.css -o ./dist/output.css --watch",
+    "build": "tailwindcss -i ./src/input.css -o ./dist/output.css --minify"
+  }
+}
+```
+
+Then run:
+
+```bash
+npm run dev    # Development with watch mode
+npm run build  # Production build
+```
+
+## How It Works
+
+The CLI performs the following steps:
+
+1. **Reads input** - Processes the input CSS file (or stdin)
+2. **Scans content** - Automatically scans your project files for Tailwind class names
+3. **Compiles CSS** - Generates CSS for all detected utilities
+4. **Optimizes** - Optionally minifies and optimizes the output
+5. **Writes output** - Saves to the output file (or stdout)
+
+In watch mode, the CLI monitors file changes and triggers incremental rebuilds when:
+- Your input CSS file changes (full rebuild)
+- Your configuration or plugin files change (full rebuild)
+- Your content files change (incremental rebuild)
+
+<Note>
+  The CLI uses the Rust-based scanner from `@tailwindcss/oxide` for extremely fast candidate detection across your entire project.
+</Note>

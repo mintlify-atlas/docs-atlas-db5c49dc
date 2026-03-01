@@ -1,0 +1,268 @@
+---
+title: Theme Customization
+description: Customize your design system using the @theme directive and theme configuration
+---
+
+Tailwind CSS v4 introduces a powerful new way to customize your theme using the `@theme` directive directly in your CSS, alongside the traditional JavaScript configuration approach.
+
+## Using @theme
+
+The `@theme` directive allows you to define theme values directly in your CSS files:
+
+```css app.css
+@import 'tailwindcss';
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  
+  --spacing-18: 4.5rem;
+  --spacing-128: 32rem;
+  
+  --font-size-2xs: 0.625rem;
+  --font-size-2xs--line-height: 0.75rem;
+}
+```
+
+These values are automatically available as utilities:
+
+```html
+<div class="bg-primary text-secondary p-18">
+  <p class="text-2xs">Custom themed content</p>
+</div>
+```
+
+## Theme Namespaces
+
+Theme values are organized into namespaces using CSS custom properties:
+
+<CodeGroup>
+```css Colors
+@theme {
+  --color-brand-blue: oklch(0.5 0.2 250);
+  --color-brand-purple: oklch(0.5 0.2 300);
+}
+```
+
+```css Spacing
+@theme {
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+}
+```
+
+```css Breakpoints
+@theme {
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+}
+```
+</CodeGroup>
+
+## Common Theme Namespaces
+
+<ParamField path="--color-*" type="color">
+  Color values for background, text, border utilities
+  ```css
+  --color-primary: #3b82f6;
+  --color-primary-50: #eff6ff;
+  ```
+</ParamField>
+
+<ParamField path="--spacing-*" type="length">
+  Spacing scale for padding, margin, gap utilities
+  ```css
+  --spacing-4: 1rem;
+  --spacing-128: 32rem;
+  ```
+</ParamField>
+
+<ParamField path="--font-size-*" type="length">
+  Font sizes with optional line-height sub-properties
+  ```css
+  --font-size-2xl: 1.5rem;
+  --font-size-2xl--line-height: 2rem;
+  ```
+</ParamField>
+
+<ParamField path="--breakpoint-*" type="length">
+  Responsive breakpoints for media queries
+  ```css
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  ```
+</ParamField>
+
+<ParamField path="--container-*" type="length">
+  Container query breakpoints
+  ```css
+  --container-sm: 20rem;
+  --container-md: 28rem;
+  ```
+</ParamField>
+
+## Sub-properties
+
+Some theme values support sub-properties using the `--` separator:
+
+```css
+@theme {
+  --font-size-xs: 0.75rem;
+  --font-size-xs--line-height: 1rem;
+  --font-size-xs--letter-spacing: 0.05em;
+}
+```
+
+The `text-xs` utility will apply all sub-properties:
+
+```html
+<!-- Applies font-size, line-height, and letter-spacing -->
+<p class="text-xs">Text with complete typography</p>
+```
+
+## Reference Mode
+
+Use `@theme reference` when you want to define theme values that should be available to the configuration but not emitted as CSS variables:
+
+```css
+@theme reference {
+  --color-brand: #3b82f6;
+  --spacing-custom: 2.5rem;
+}
+```
+
+<Note>
+Reference theme values are useful for:
+- Plugin development where values are transformed
+- Keeping the generated CSS smaller
+- Defining values used only in JavaScript calculations
+</Note>
+
+## Inline vs Variable Resolution
+
+By default, theme values are referenced as CSS variables:
+
+```css
+/* Generated CSS */
+.bg-primary {
+  background-color: var(--color-primary);
+}
+```
+
+With `@theme reference`, values are inlined:
+
+```css
+@theme reference {
+  --color-primary: #3b82f6;
+}
+
+/* Generated CSS */
+.bg-primary {
+  background-color: #3b82f6;
+}
+```
+
+## Clearing Theme Values
+
+Set values to `initial` to remove them:
+
+```css
+@theme {
+  /* Remove all color values */
+  --color-*: initial;
+  
+  /* Remove specific color */
+  --color-red: initial;
+  
+  /* Remove all theme values */
+  --*: initial;
+}
+```
+
+## JavaScript Configuration
+
+You can also define theme values in your `tailwind.config.js`:
+
+```ts tailwind.config.ts
+export default {
+  theme: {
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#8b5cf6',
+    },
+    spacing: {
+      '18': '4.5rem',
+      '128': '32rem',
+    },
+    extend: {
+      fontSize: {
+        '2xs': ['0.625rem', { lineHeight: '0.75rem' }],
+      },
+    },
+  },
+}
+```
+
+## Theme Function
+
+Access theme values from within configuration:
+
+```ts
+export default {
+  theme: {
+    borderRadius: {
+      DEFAULT: '0.25rem',
+    },
+    extend: {
+      spacing: ({ theme }) => ({
+        'safe-top': theme('spacing.4'),
+      }),
+      borderRadius: ({ theme }) => ({
+        '4xl': `calc(${theme('borderRadius.DEFAULT')} * 4)`,
+      }),
+    },
+  },
+}
+```
+
+## Merging Strategies
+
+When using `extend`, theme values are deeply merged:
+
+<CodeGroup>
+```ts Replace
+export default {
+  theme: {
+    // Completely replaces default colors
+    colors: {
+      primary: '#3b82f6',
+    },
+  },
+}
+```
+
+```ts Extend
+export default {
+  theme: {
+    extend: {
+      // Adds to default colors
+      colors: {
+        primary: '#3b82f6',
+      },
+    },
+  },
+}
+```
+</CodeGroup>
+
+## Best Practices
+
+1. **Use @theme for CSS-based values** - Colors, spacing, and sizes defined close to usage
+2. **Use config for complex logic** - Dynamic values, calculations, or conditional themes
+3. **Prefer reference mode for large values** - Keep generated CSS size down
+4. **Use sub-properties** - Group related values like font-size and line-height
+
+<Warning>
+Be cautious when clearing theme values with `--*: initial` - this removes ALL theme values and should only be used when you want complete control over the entire design system.
+</Warning>

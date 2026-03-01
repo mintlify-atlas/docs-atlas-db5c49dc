@@ -1,0 +1,626 @@
+---
+title: 'Config Types and Configuration API'
+description: 'TypeScript types and interfaces for Tailwind CSS configuration'
+---
+
+## Overview
+
+Tailwind CSS v4 provides TypeScript-first configuration types for defining themes, plugins, and content sources. The configuration system supports both user-provided configs and fully resolved configs.
+
+```typescript
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#3b82f6'
+      }
+    }
+  },
+  plugins: []
+}
+```
+
+## UserConfig
+
+The `UserConfig` interface defines the structure for user-provided configuration.
+
+```typescript
+interface UserConfig {
+  presets?: UserConfig[]
+  theme?: ThemeConfig
+  plugins?: Plugin[]
+  content?: ContentFile[] | { relative?: boolean; files: ContentFile[] }
+  darkMode?: DarkModeStrategy
+  prefix?: string
+  blocklist?: string[]
+  important?: boolean | string
+  future?: 'all' | Record<string, boolean>
+  experimental?: 'all' | Record<string, boolean>
+}
+```
+
+### Properties
+
+<ParamField path="presets" type="UserConfig[]">
+  Array of preset configurations to extend. Presets are merged in order, with later configs taking precedence.
+  
+  ```typescript
+  const config: UserConfig = {
+    presets: [
+      require('./preset-base'),
+      require('./preset-extended')
+    ]
+  }
+  ```
+</ParamField>
+
+<ParamField path="theme" type="ThemeConfig">
+  Theme configuration for customizing design tokens.
+  
+  <Expandable title="ThemeConfig structure">
+    ```typescript
+    type ThemeConfig = Record<string, ThemeValue> & {
+      extend?: Record<string, ThemeValue>
+    }
+    
+    type ThemeValue = 
+      | ResolvableTo<Record<string, unknown>> 
+      | null 
+      | undefined
+    
+    type ResolvableTo<T> = T | ((utils: PluginUtils) => T)
+    ```
+  </Expandable>
+  
+  ```typescript
+  theme: {
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#8b5cf6'
+    },
+    extend: {
+      spacing: {
+        '128': '32rem'
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="plugins" type="Plugin[]">
+  Array of plugins to extend Tailwind's functionality.
+  
+  ```typescript
+  import customPlugin from './custom-plugin'
+  
+  const config: UserConfig = {
+    plugins: [
+      customPlugin,
+      require('@tailwindcss/typography')
+    ]
+  }
+  ```
+</ParamField>
+
+<ParamField path="content" type="ContentFile[] | ContentConfig">
+  Content source configuration for scanning template files.
+  
+  Can be either:
+  - Simple array of file patterns or raw content
+  - Object with `relative` flag and `files` array
+  
+  ```typescript
+  // Simple array
+  content: [
+    './src/**/*.{html,js,tsx}',
+    { raw: '<div class="flex"></div>', extension: 'html' }
+  ]
+  
+  // With relative flag
+  content: {
+    relative: true,
+    files: ['./components/**/*.tsx']
+  }
+  ```
+  
+  <Expandable title="ContentFile type">
+    ```typescript
+    type ContentFile = 
+      | string 
+      | { raw: string; extension?: string }
+    ```
+  </Expandable>
+</ParamField>
+
+<ParamField path="darkMode" type="DarkModeStrategy">
+  Strategy for handling dark mode variants.
+  
+  Options:
+  - `false` - Disable dark mode
+  - `'media'` - Use `prefers-color-scheme` media query
+  - `'class'` - Require `.dark` class on HTML element
+  - `['class', '.dark-theme']` - Custom dark mode class
+  - `'selector'` - Use `:where(.dark)` selector
+  - `['selector', '[data-theme="dark"]']` - Custom selector
+  - `['variant', '&:is(.dark *)']` - Fully custom variant
+  
+  ```typescript
+  // Use media query strategy
+  darkMode: 'media'
+  
+  // Use custom class
+  darkMode: ['class', '.dark-theme']
+  
+  // Use custom selector
+  darkMode: ['selector', '[data-theme="dark"]']
+  
+  // Fully custom variant
+  darkMode: ['variant', ['&:is(.dark *)', '&:is([data-theme="dark"] *)']]
+  ```
+</ParamField>
+
+<ParamField path="prefix" type="string">
+  Prefix to add to all utility class names.
+  
+  ```typescript
+  prefix: 'tw-'
+  // Generates: tw-flex, tw-bg-blue-500, etc.
+  ```
+</ParamField>
+
+<ParamField path="blocklist" type="string[]">
+  Array of class names to exclude from generation.
+  
+  ```typescript
+  blocklist: [
+    'container',
+    'collapse'
+  ]
+  ```
+</ParamField>
+
+<ParamField path="important" type="boolean | string">
+  Make all utilities `!important` or scope them to a selector.
+  
+  ```typescript
+  // All utilities are !important
+  important: true
+  
+  // Scope utilities to #app
+  important: '#app'
+  ```
+</ParamField>
+
+<ParamField path="future" type="'all' | Record<string, boolean>">
+  Enable future opt-in features.
+  
+  ```typescript
+  future: {
+    hoverOnlyWhenSupported: true
+  }
+  
+  // Or enable all future features
+  future: 'all'
+  ```
+</ParamField>
+
+<ParamField path="experimental" type="'all' | Record<string, boolean>">
+  Enable experimental features.
+  
+  ```typescript
+  experimental: {
+    optimizeUniversalDefaults: true
+  }
+  ```
+</ParamField>
+
+## ResolvedConfig
+
+The `ResolvedConfig` interface represents a fully processed configuration after merging presets and resolving all values.
+
+```typescript
+interface ResolvedConfig {
+  theme: Record<string, Record<string, unknown>>
+  plugins: PluginWithConfig[]
+  content: ResolvedContentConfig
+  darkMode: DarkModeStrategy | null
+  prefix: string
+  blocklist: string[]
+  important: boolean | string
+  future: Record<string, boolean>
+  experimental: Record<string, boolean>
+}
+```
+
+### Properties
+
+<ResponseField name="theme" type="Record<string, Record<string, unknown>>">
+  Fully resolved theme with all presets merged and functions evaluated.
+  
+  ```typescript
+  {
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#8b5cf6'
+    },
+    spacing: {
+      '1': '0.25rem',
+      '2': '0.5rem',
+      // ...
+    }
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="plugins" type="PluginWithConfig[]">
+  Array of resolved plugins with their configuration.
+</ResponseField>
+
+<ResponseField name="content" type="ResolvedContentConfig">
+  Resolved content configuration.
+  
+  ```typescript
+  interface ResolvedContentConfig {
+    files: ResolvedContent[]
+  }
+  
+  type ResolvedContent = 
+    | { base: string; pattern: string }
+    | { raw: string; extension?: string }
+  ```
+</ResponseField>
+
+<ResponseField name="darkMode" type="DarkModeStrategy | null">
+  Resolved dark mode strategy, or `null` if disabled.
+</ResponseField>
+
+<ResponseField name="prefix" type="string">
+  Resolved prefix (empty string if none).
+</ResponseField>
+
+<ResponseField name="blocklist" type="string[]">
+  Resolved blocklist (empty array if none).
+</ResponseField>
+
+<ResponseField name="important" type="boolean | string">
+  Resolved important setting.
+</ResponseField>
+
+<ResponseField name="future" type="Record<string, boolean>">
+  Resolved future flags.
+</ResponseField>
+
+<ResponseField name="experimental" type="Record<string, boolean>">
+  Resolved experimental flags.
+</ResponseField>
+
+## ThemeConfig
+
+Detailed structure for theme configuration.
+
+```typescript
+type ThemeConfig = Record<string, ThemeValue> & {
+  extend?: Record<string, ThemeValue>
+}
+
+type ThemeValue = ResolvableTo<Record<string, unknown>> | null | undefined
+
+type ResolvableTo<T> = T | ((utils: PluginUtils) => T)
+```
+
+### Theme Values
+
+Theme values can be:
+1. **Static objects** - Direct key-value pairs
+2. **Functions** - Receive `PluginUtils` and return values
+3. **null/undefined** - Disable a theme section
+
+<CodeGroup>
+```typescript Static Theme Values
+const config: UserConfig = {
+  theme: {
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#8b5cf6',
+      accent: '#ec4899'
+    },
+    spacing: {
+      'xs': '0.5rem',
+      'sm': '1rem',
+      'md': '1.5rem',
+      'lg': '2rem',
+      'xl': '3rem'
+    }
+  }
+}
+```
+
+```typescript Function-based Theme Values
+const config: UserConfig = {
+  theme: {
+    colors: ({ theme }) => ({
+      // Reference other theme values
+      primary: theme('colors.blue.500'),
+      // Computed values
+      secondary: computeColor('#8b5cf6')
+    }),
+    
+    spacing: ({ theme }) => {
+      const base = 0.25 // 4px
+      return {
+        ...theme('spacing'),
+        'custom': `${base * 10}rem`
+      }
+    }
+  }
+}
+```
+
+```typescript Extending Theme
+const config: UserConfig = {
+  theme: {
+    // Replace default colors entirely
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#8b5cf6'
+    },
+    
+    extend: {
+      // Add to default spacing without replacing
+      spacing: {
+        '128': '32rem',
+        '144': '36rem'
+      },
+      
+      // Add custom theme sections
+      animation: {
+        'spin-slow': 'spin 3s linear infinite'
+      }
+    }
+  }
+}
+```
+
+```typescript Disabling Theme Sections
+const config: UserConfig = {
+  theme: {
+    // Disable container utilities
+    container: null,
+    
+    extend: {
+      colors: {
+        primary: '#3b82f6'
+      }
+    }
+  }
+}
+```
+</CodeGroup>
+
+## Content Configuration
+
+Detailed content source configuration options.
+
+### ContentFile Types
+
+<CodeGroup>
+```typescript File Patterns
+const config: UserConfig = {
+  content: [
+    // Glob patterns
+    './src/**/*.{html,js,ts,jsx,tsx}',
+    './components/**/*.vue',
+    './pages/**/*.{js,ts,jsx,tsx}',
+    
+    // Specific files
+    './index.html',
+    './app.js'
+  ]
+}
+```
+
+```typescript Raw Content
+const config: UserConfig = {
+  content: [
+    './src/**/*.tsx',
+    
+    // Inline HTML content
+    {
+      raw: '<div class="flex justify-center"></div>',
+      extension: 'html'
+    },
+    
+    // Inline with different extension
+    {
+      raw: 'const classes = "bg-blue-500 text-white"',
+      extension: 'js'
+    }
+  ]
+}
+```
+
+```typescript Relative Paths
+const config: UserConfig = {
+  content: {
+    relative: true,
+    files: [
+      './components/**/*.tsx',
+      './pages/**/*.tsx'
+    ]
+  }
+}
+```
+</CodeGroup>
+
+## Complete Configuration Example
+
+<CodeGroup>
+```typescript Minimal Config
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: ['./src/**/*.{html,js,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        primary: '#3b82f6'
+      }
+    }
+  }
+}
+
+export default config
+```
+
+```typescript Full-Featured Config
+import type { Config } from 'tailwindcss'
+import customPlugin from './plugins/custom'
+
+const config: Config = {
+  // Content sources
+  content: {
+    relative: true,
+    files: [
+      './src/**/*.{html,js,ts,jsx,tsx}',
+      './components/**/*.vue'
+    ]
+  },
+  
+  // Theme customization
+  theme: {
+    // Override defaults
+    colors: {
+      primary: '#3b82f6',
+      secondary: '#8b5cf6',
+      accent: '#ec4899'
+    },
+    
+    // Extend defaults
+    extend: {
+      spacing: {
+        '128': '32rem',
+        '144': '36rem'
+      },
+      
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif']
+      },
+      
+      animation: {
+        'spin-slow': 'spin 3s linear infinite',
+        'bounce-slow': 'bounce 2s infinite'
+      },
+      
+      keyframes: {
+        wiggle: {
+          '0%, 100%': { transform: 'rotate(-3deg)' },
+          '50%': { transform: 'rotate(3deg)' }
+        }
+      }
+    }
+  },
+  
+  // Plugins
+  plugins: [
+    customPlugin,
+    require('@tailwindcss/typography'),
+    require('@tailwindcss/forms')
+  ],
+  
+  // Dark mode
+  darkMode: ['class', '.dark-mode'],
+  
+  // Prefix
+  prefix: 'tw-',
+  
+  // Blocklist
+  blocklist: ['container', 'collapse'],
+  
+  // Important
+  important: '#app',
+  
+  // Future flags
+  future: {
+    hoverOnlyWhenSupported: true
+  },
+  
+  // Experimental flags
+  experimental: {
+    optimizeUniversalDefaults: true
+  }
+}
+
+export default config
+```
+
+```typescript With Presets
+import type { Config } from 'tailwindcss'
+import basePreset from './presets/base'
+import brandPreset from './presets/brand'
+
+const config: Config = {
+  presets: [
+    basePreset,
+    brandPreset
+  ],
+  
+  content: ['./src/**/*.tsx'],
+  
+  theme: {
+    extend: {
+      // Override preset values
+      colors: {
+        primary: '#custom-color'
+      }
+    }
+  }
+}
+
+export default config
+```
+
+```typescript Dynamic Theme
+import type { Config } from 'tailwindcss'
+
+const config: Config = {
+  content: ['./src/**/*.tsx'],
+  
+  theme: {
+    colors: ({ theme }) => ({
+      ...theme('colors'),
+      primary: theme('colors.blue.500'),
+      secondary: theme('colors.purple.500')
+    }),
+    
+    spacing: ({ theme }) => {
+      const base = theme('spacing')
+      
+      return {
+        ...base,
+        // Add fractional spacing
+        '1/2': '0.125rem',
+        '3/2': '0.375rem'
+      }
+    }
+  }
+}
+
+export default config
+```
+</CodeGroup>
+
+## Type Exports
+
+```typescript
+import type {
+  Config,              // Alias for UserConfig
+  UserConfig,          // User-provided config
+  ResolvedConfig,      // Fully resolved config
+  ThemeConfig,         // Theme configuration
+  ThemeValue,          // Theme value types
+  ResolvableTo,        // Function or static value
+  ResolvedThemeValue,  // Resolved theme value
+} from 'tailwindcss'
+```

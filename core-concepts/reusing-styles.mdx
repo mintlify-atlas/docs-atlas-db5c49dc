@@ -1,0 +1,427 @@
+---
+title: Reusing Styles
+description: Learn effective patterns for managing duplication and reusing styles in Tailwind CSS projects.
+---
+
+When building with Tailwind's utility-first approach, you'll naturally encounter situations where you need to reuse the same set of utilities across multiple elements. Here are the recommended approaches for managing duplication and reusing styles.
+
+## Use Components (Recommended)
+
+The best way to reuse styles in Tailwind is to create components using your framework of choice. This keeps your utility classes alongside your markup in a single place.
+
+<Tabs>
+  <Tab title="React">
+    ```jsx
+    function Button({ children, variant = 'primary' }) {
+      const baseClasses = 'px-4 py-2 rounded font-semibold transition-colors'
+      const variants = {
+        primary: 'bg-blue-500 hover:bg-blue-600 text-white',
+        secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900',
+        danger: 'bg-red-500 hover:bg-red-600 text-white',
+      }
+
+      return (
+        <button className={`${baseClasses} ${variants[variant]}`}>
+          {children}
+        </button>
+      )
+    }
+
+    // Usage
+    <Button>Click me</Button>
+    <Button variant="secondary">Cancel</Button>
+    <Button variant="danger">Delete</Button>
+    ```
+  </Tab>
+  <Tab title="Vue">
+    ```vue
+    <template>
+      <button :class="buttonClasses">
+        <slot />
+      </button>
+    </template>
+
+    <script setup>
+    import { computed } from 'vue'
+
+    const props = defineProps({
+      variant: {
+        type: String,
+        default: 'primary'
+      }
+    })
+
+    const buttonClasses = computed(() => {
+      const base = 'px-4 py-2 rounded font-semibold transition-colors'
+      const variants = {
+        primary: 'bg-blue-500 hover:bg-blue-600 text-white',
+        secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-900',
+        danger: 'bg-red-500 hover:bg-red-600 text-white',
+      }
+      return `${base} ${variants[props.variant]}`
+    })
+    </script>
+
+    <!-- Usage -->
+    <Button>Click me</Button>
+    <Button variant="secondary">Cancel</Button>
+    <Button variant="danger">Delete</Button>
+    ```
+  </Tab>
+  <Tab title="HTML Partials">
+    ```html
+    <!-- button.html -->
+    <button class="px-4 py-2 rounded font-semibold transition-colors bg-blue-500 hover:bg-blue-600 text-white">
+      {{ text }}
+    </button>
+
+    <!-- index.html -->
+    {% include "button.html" with text="Click me" %}
+    ```
+  </Tab>
+</Tabs>
+
+### Benefits of Component-Based Reuse
+
+1. **Single source of truth** - Change the component once, update everywhere
+2. **Co-located markup and styles** - Easy to understand and maintain
+3. **Full power of JavaScript** - Conditional logic, props, state
+4. **Type safety** - With TypeScript, catch errors at compile time
+
+## Using @apply
+
+When working with traditional CSS files or when components aren't an option, use `@apply` to extract repeated utility patterns:
+
+```css
+@tailwind utilities;
+
+.btn {
+  @apply px-4 py-2 rounded font-semibold transition-colors;
+}
+
+.btn-primary {
+  @apply bg-blue-500 hover:bg-blue-600 text-white;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 hover:bg-gray-300 text-gray-900;
+}
+```
+
+```html
+<button class="btn btn-primary">Click me</button>
+<button class="btn btn-secondary">Cancel</button>
+```
+
+### How @apply Works
+
+From the Tailwind source code, `@apply` processes utility classes and inlines their CSS:
+
+```typescript
+// When you write:
+@apply flex items-center space-x-4;
+
+// Tailwind generates:
+display: flex;
+align-items: center;
+> * + * {
+  margin-left: 1rem;
+}
+```
+
+### @apply with Variants
+
+You can use variants in `@apply` statements:
+
+```css
+.card {
+  @apply p-6 bg-white rounded-lg shadow-md;
+  @apply hover:shadow-lg transition-shadow;
+  @apply dark:bg-gray-800 dark:text-white;
+}
+```
+
+### Important Modifier
+
+Add `!` to make declarations `!important`:
+
+```css
+.btn {
+  @apply px-4 py-2!
+}
+
+/* Generates */
+.btn {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+```
+
+### When to Use @apply
+
+<Note>
+  **Good use cases:**
+  - Base styles that are truly reused everywhere
+  - Third-party component overrides
+  - Extracting very common patterns in large codebases
+
+  **Better solved with components:**
+  - Button variants
+  - Form fields
+  - Cards and other UI patterns
+  - Page layouts
+</Note>
+
+## Creating Custom Utilities
+
+For project-specific utilities that aren't in Tailwind, use `@utility`:
+
+```css
+@utility tab-content {
+  @apply hidden;
+  
+  &:target {
+    @apply block;
+  }
+}
+
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+```
+
+Use them like any other Tailwind utility:
+
+```html
+<div class="tab-content" id="tab1">
+  Content 1
+</div>
+
+<div class="overflow-auto scrollbar-hide">
+  Hidden scrollbar
+</div>
+```
+
+From the source, custom utilities support all Tailwind features:
+
+```typescript
+test('custom utilities work with @apply', async () => {
+  let result = await compileCss(css`
+    @utility foo {
+      @apply flex flex-col underline;
+    }
+    @utility bar {
+      @apply z-10;
+      &:hover {
+        @apply z-20;
+      }
+    }
+  `)
+  // Custom utilities integrate fully with the system
+})
+```
+
+## Multi-Class Variants
+
+For groups of utilities that belong together, use component classes:
+
+```css
+.card {
+  @apply rounded-lg shadow-md overflow-hidden;
+}
+
+.card-header {
+  @apply px-6 py-4 border-b border-gray-200;
+}
+
+.card-body {
+  @apply p-6;
+}
+```
+
+```html
+<div class="card">
+  <div class="card-header">
+    <h2 class="text-xl font-bold">Card Title</h2>
+  </div>
+  <div class="card-body">
+    <p>Card content goes here</p>
+  </div>
+</div>
+```
+
+## CSS Variables for Theming
+
+Use CSS custom properties for values that change:
+
+```css
+@theme {
+  --color-primary: #3b82f6;
+  --color-secondary: #8b5cf6;
+  --spacing-card: 1.5rem;
+}
+
+.themed-button {
+  @apply px-6 py-3 rounded;
+  background-color: var(--color-primary);
+  padding: var(--spacing-card);
+}
+```
+
+Then override in specific contexts:
+
+```html
+<div style="--color-primary: #ef4444;">
+  <button class="themed-button">
+    Red button using custom property
+  </button>
+</div>
+```
+
+## Loops and Maps
+
+For generating utility variations, use your CSS preprocessor:
+
+```css
+/* Generate spacing utilities */
+@for $i from 1 through 12 {
+  .custom-space-#{$i} {
+    @apply space-y-#{$i};
+  }
+}
+
+/* Generate color variations */
+@each $color in (red, blue, green) {
+  .badge-#{$color} {
+    @apply bg-#{$color}-100 text-#{$color}-800 border border-#{$color}-200;
+  }
+}
+```
+
+## Editor Snippets
+
+Create snippets for frequently-used utility combinations:
+
+<CodeGroup>
+```json VSCode
+{
+  "Flex Center": {
+    "prefix": "flex-center",
+    "body": "flex items-center justify-center"
+  },
+  "Card": {
+    "prefix": "card",
+    "body": "bg-white dark:bg-gray-800 rounded-lg shadow-md p-6"
+  }
+}
+```
+
+```json Sublime Text
+<snippet>
+  <content><![CDATA[
+flex items-center justify-center
+]]></content>
+  <tabTrigger>flex-center</tabTrigger>
+  <scope>text.html</scope>
+</snippet>
+```
+</CodeGroup>
+
+## Avoiding Premature Abstraction
+
+<Warning>
+  Don't create abstractions too early. It's better to have some duplication initially and extract patterns as they naturally emerge.
+</Warning>
+
+### Copy-Paste First
+
+When you need the same pattern twice, copy-paste is fine:
+
+```html
+<!-- First instance -->
+<div class="flex items-center space-x-4 p-4 bg-white rounded-lg shadow">
+  <!-- Content -->
+</div>
+
+<!-- Second instance -->
+<div class="flex items-center space-x-4 p-4 bg-white rounded-lg shadow">
+  <!-- Content -->
+</div>
+```
+
+### Extract When Needed
+
+After using the pattern 3-5 times and it's proven stable, create a component:
+
+```jsx
+function InfoCard({ children }) {
+  return (
+    <div className="flex items-center space-x-4 p-4 bg-white rounded-lg shadow">
+      {children}
+    </div>
+  )
+}
+```
+
+## Best Practices
+
+### 1. Prefer Components Over @apply
+
+```jsx
+// Good: Component-based
+function Alert({ type, children }) {
+  const styles = {
+    info: 'bg-blue-100 border-blue-500 text-blue-700',
+    warning: 'bg-yellow-100 border-yellow-500 text-yellow-700',
+    error: 'bg-red-100 border-red-500 text-red-700',
+  }
+  return (
+    <div className={`border-l-4 p-4 ${styles[type]}`}>
+      {children}
+    </div>
+  )
+}
+```
+
+```css
+/* Less ideal: @apply */
+.alert {
+  @apply border-l-4 p-4;
+}
+.alert-info {
+  @apply bg-blue-100 border-blue-500 text-blue-700;
+}
+```
+
+### 2. Keep Utilities Semantic
+
+```css
+/* Good: Semantic class names */
+.prose-link {
+  @apply text-blue-600 hover:text-blue-800 underline;
+}
+
+/* Bad: Generic class names */
+.blue-underline {
+  @apply text-blue-600 hover:text-blue-800 underline;
+}
+```
+
+### 3. Don't @apply Everything
+
+```html
+<!-- Good: Use utilities directly for one-off styles -->
+<div class="flex items-center space-x-4">
+  <div class="btn-primary">Submit</div>
+  <div class="ml-auto text-sm text-gray-600">Cancel</div>
+</div>
+```
+
+<Info>
+  Remember: The goal isn't to eliminate all utility classes from your HTML. Use abstractions where they add value, but don't be afraid of utilities in your markup.
+</Info>
