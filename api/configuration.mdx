@@ -624,3 +624,58 @@ import type {
   ResolvedThemeValue,  // Resolved theme value
 } from 'tailwindcss'
 ```
+
+## v3 Compatibility Exports
+
+For backwards compatibility with Tailwind CSS v3, the following exports are available:
+
+### Colors
+
+Access the default color palette:
+
+```javascript
+import colors from 'tailwindcss/colors'
+
+console.log(colors.blue[500]) // '#3b82f6'
+console.log(colors.red) // { 50: '#fef2f2', 100: '#fee2e2', ... }
+```
+
+### Default Theme
+
+Access default theme values for use in JavaScript configs:
+
+```javascript
+import defaultTheme from 'tailwindcss/defaultTheme'
+
+export default {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', ...defaultTheme.fontFamily.sans],
+      },
+    },
+  },
+}
+```
+
+### Flatten Color Palette
+
+Utility function to flatten nested color objects:
+
+```javascript
+import flattenColorPalette from 'tailwindcss/lib/util/flattenColorPalette'
+
+const colors = {
+  blue: {
+    500: '#3b82f6',
+    600: '#2563eb',
+  },
+}
+
+const flattened = flattenColorPalette(colors)
+// { 'blue-500': '#3b82f6', 'blue-600': '#2563eb' }
+```
+
+<Warning>
+These exports are provided for v3 compatibility. In v4, prefer using the CSS-based theme system with `@theme` directive and theme variables.
+</Warning>
