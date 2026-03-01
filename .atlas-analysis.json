@@ -1,0 +1,151 @@
+{
+  "projectType": "framework",
+  "projectName": "Tailwind CSS",
+  "projectDescription": "A utility-first CSS framework for rapidly building custom user interfaces.",
+  "theme": "palm",
+  "primaryColor": "#06b6d4",
+  "lightColor": "#22d3ee",
+  "darkColor": "#0891b2",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart",
+              "editor-setup"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "core-concepts/utility-first",
+              "core-concepts/responsive-design",
+              "core-concepts/dark-mode",
+              "core-concepts/reusing-styles",
+              "core-concepts/adding-custom-styles"
+            ]
+          },
+          {
+            "group": "Customization",
+            "pages": [
+              "customization/configuration",
+              "customization/theme",
+              "customization/colors",
+              "customization/spacing",
+              "customization/variants",
+              "customization/plugins"
+            ]
+          },
+          {
+            "group": "Build Integration",
+            "pages": [
+              "integration/cli",
+              "integration/vite",
+              "integration/postcss",
+              "integration/webpack"
+            ]
+          },
+          {
+            "group": "Advanced",
+            "pages": [
+              "advanced/custom-utilities",
+              "advanced/custom-variants",
+              "advanced/functions-directives",
+              "advanced/important-modifier",
+              "advanced/theming"
+            ]
+          },
+          {
+            "group": "Upgrading",
+            "pages": [
+              "upgrading/upgrade-guide",
+              "upgrading/v3-to-v4",
+              "upgrading/codemods"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "JavaScript API",
+            "pages": [
+              "api/compile",
+              "api/design-system",
+              "api/configuration"
+            ]
+          },
+          {
+            "group": "Plugin API",
+            "pages": [
+              "api/plugin-api/overview",
+              "api/plugin-api/add-utilities",
+              "api/plugin-api/add-variants",
+              "api/plugin-api/add-base",
+              "api/plugin-api/theme-function"
+            ]
+          },
+          {
+            "group": "CSS Features",
+            "pages": [
+              "api/css/at-theme",
+              "api/css/at-utility",
+              "api/css/at-variant",
+              "api/css/at-source",
+              "api/css/theme-function"
+            ]
+          },
+          {
+            "group": "Build Plugins",
+            "pages": [
+              "api/vite-plugin",
+              "api/postcss-plugin",
+              "api/webpack-plugin"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Utility-first CSS framework",
+    "Customizable design system with theme configuration",
+    "Responsive design utilities with mobile-first breakpoints",
+    "Dark mode support with class and media strategies",
+    "Plugin system for extending functionality",
+    "Custom utility and variant creation",
+    "PostCSS, Vite, and Webpack integration",
+    "JIT (Just-In-Time) compilation engine",
+    "CSS-in-JS compatibility layer",
+    "Automatic vendor prefixing",
+    "PurgeCSS integration for production optimization",
+    "TypeScript support with type definitions"
+  ],
+  "publicApiSurface": [
+    "compile()",
+    "compileAst()",
+    "__unstable__loadDesignSystem()",
+    "plugin()",
+    "plugin.withOptions()",
+    "@tailwindcss/vite",
+    "@tailwindcss/postcss",
+    "@tailwindcss/webpack",
+    "@tailwindcss/cli",
+    "@theme",
+    "@utility",
+    "@variant",
+    "@custom-variant",
+    "@source",
+    "@apply",
+    "theme()",
+    "DesignSystem",
+    "Config",
+    "PluginAPI"
+  ]
+}
